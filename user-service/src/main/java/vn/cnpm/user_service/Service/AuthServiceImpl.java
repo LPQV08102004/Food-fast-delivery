@@ -34,7 +34,6 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
         return new AuthResponse(jwtUtils.generateToken(user.getUsername()));
     }
-
     @Override
     public AuthResponse login(loginRequest request) {
         authenticationManager.authenticate(
