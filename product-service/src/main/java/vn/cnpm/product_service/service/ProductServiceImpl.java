@@ -31,6 +31,7 @@ public class ProductServiceImpl implements ProductService {
         productRepository.save(product);
         return mapToResponse(product);
     }
+
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -38,6 +39,14 @@ public class ProductServiceImpl implements ProductService {
     }
     public List<ProductResponse> getAllProducts() {
         List<Product> products = productRepository.findAll();
+        return products.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+    public List<ProductResponse> getProductsByCategoryId(Long categoryId) {
+        List<Product> products = productRepository.findByCategoryId(categoryId);
+        return products.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+    public List<ProductResponse> getProductsByCategoryName(String categoryName) {
+        List<Product> products = productRepository.findByCategoryName(categoryName);
         return products.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
     public ProductResponse updateProduct(Long id, ProductRequest request) {
