@@ -5,15 +5,20 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.Instant;
+import java.util.List;
 
 @Data
 @Builder
 public class OrderResponse {
     private Long id;
-    private Long userId;
-    private String product;
-    private Double price;
+    private Double totalPrice;
     private OrderStatus status;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private List<OrderItemResponse> items;
+    @Data
+    @Builder
+    public static class OrderItemResponse {
+    private Long productId;
+    private Integer quantity;
+    private Double price;}
 }
+
