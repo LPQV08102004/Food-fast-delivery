@@ -24,14 +24,14 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
-        double total = 0;
+        final double[] total = {0.0};
         List<OrderItem> items = request.getItems().stream().map(i -> {
             ProductDTO product = productClient.getProductById(i.getProductId());
             if (product.getStock() < i.getQuantity()) {
                 throw new RuntimeException("Product " + product.getName() + " out of stock");
             }
 
-            total += product.getPrice() * i.getQuantity();
+            total[0] += product.getPrice() * i.getQuantity();
 
             // giảm tồn kho
             productClient.reduceStock(product.getId(), i.getQuantity());
@@ -44,18 +44,18 @@ public class OrderServiceImpl implements OrderService {
         }).toList();
         Order order = Order.builder()
                 .userId(request.getUserId())
-                .totalPrice(total)
+                .totalPrice(total[0])
                 .status(OrderStatus.PAYMENT_PENDING)
                 .orderItems(items)
                 .build();
         Order saved = orderRepository.save(order);
         PaymentDTO paymentReq = new PaymentDTO();
         paymentReq.setOrderId(order.getId());
-        paymentReq.setAmount(total);
+        paymentReq.setAmount(total[0]);
 
         PaymentDTO paymentRes = paymentClient.createPayment(paymentReq);
 
-        // 4️⃣ Cập nhật trạng thái
+
         if ("SUCCESS".equalsIgnoreCase(paymentRes.getStatus())) {
             order.setStatus(OrderStatus.PAID);
         } else {
@@ -63,7 +63,7 @@ public class OrderServiceImpl implements OrderService {
         }
         orderRepository.save(order);
 
-        // 5️⃣ Trả response
+
         return OrderResponse.builder()
                 .id(order.getId())
                 .status(order.getStatus())
