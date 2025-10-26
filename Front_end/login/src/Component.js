@@ -1,0 +1,114 @@
+import React from "react";
+
+export const Component = () => {
+  return (
+<div id="webcrumbs"> 
+        	<div className="flex items-center justify-center min-h-screen bg-gray-100 px-4 py-8 font-sans">
+	  <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+	    <div className="p-8">
+	      <div className="flex justify-center mb-8">
+	        <div className="flex items-center">
+	          <svg className="w-10 h-10 text-[#FF6600]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+	            <path d="M18.5 4L18.5 6M18.5 6V8M18.5 6H16.5M18.5 6H20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+	            <path d="M4 14H6C6.55228 14 7 14.4477 7 15V18C7 18.5523 6.55228 19 6 19H4C3.44772 19 3 18.5523 3 18V15C3 14.4477 3.44772 14 4 14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+	            <path d="M11 14H13C13.5523 14 14 14.4477 14 15V18C14 18.5523 13.5523 19 13 19H11C10.4477 19 10 18.5523 10 18V15C10 14.4477 10.4477 14 11 14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+	            <path d="M18 14H20C20.5523 14 21 14.4477 21 15V18C21 18.5523 20.5523 19 20 19H18C17.4477 19 17 18.5523 17 18V15C17 14.4477 17.4477 14 18 14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+	            <path d="M21 9H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+	            <path d="M11.9994 2H7.99942C6.3426 2 4.99942 3.34315 4.99942 5V9H14.9994V5C14.9994 3.34315 13.6563 2 11.9994 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+	          </svg>
+	          <h1 className="ml-2 text-2xl font-bold text-gray-800">FoodFast <span className="text-[#FF6600]">Delivery</span></h1>
+	        </div>
+	      </div>
+	      
+	      <h2 className="text-xl font-bold text-center mb-6 text-gray-800">Log in to your account</h2>
+	      
+	      <form>
+	        <div className="mb-4">
+	          <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="email">
+	            Email
+	          </label>
+	          <div className="relative">
+	            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+	              <span className="material-symbols-outlined text-sm">mail</span>
+	            </span>
+	            <input 
+	              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6600] focus:border-transparent transition-all duration-200"
+	              id="email"
+	              type="email" 
+	              placeholder="your@email.com" 
+	              required
+	            />
+	          </div>
+	        </div>
+	        
+	        <div className="mb-4">
+	          <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="password">
+	            Password
+	          </label>
+	          <div className="relative">
+	            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+	              <span className="material-symbols-outlined text-sm">lock</span>
+	            </span>
+	            <input 
+	              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6600] focus:border-transparent transition-all duration-200"
+	              id="password" 
+	              type="password" 
+	              placeholder="••••••••" 
+	              required
+	            />
+	          </div>
+	        </div>
+	        
+	        <div className="flex items-center justify-between mb-6">
+	          <div className="flex items-center">
+	            <input 
+	              type="checkbox" 
+	              id="remember" 
+	              className="h-4 w-4 text-[#FF6600] focus:ring-[#FF6600] border-gray-300 rounded"
+	            />
+	            <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">
+	              Remember me
+	            </label>
+	          </div>
+	          <div>
+	            <a href="#" className="text-sm text-[#FF6600] hover:text-[#e05c00] transition-colors duration-200">
+	              Forgot password?
+	            </a>
+	          </div>
+	        </div>
+	        
+	        <button 
+	          type="submit" 
+	          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#FF6600] hover:bg-[#e05c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6600] transition-all duration-200"
+	        >
+	          Log in
+	        </button>
+	      </form>
+	      
+	      <div className="mt-6 text-center text-sm">
+	        <span className="text-gray-600">Don't have an account?</span>
+	        <a href="#" className="ml-1 font-medium text-[#FF6600] hover:text-[#e05c00] transition-colors duration-200">
+	          Sign up
+	        </a>
+	      </div>
+	      
+	      <div className="mt-8 text-center">
+	        <p className="text-xs text-gray-500">
+	          By continuing, you agree to FoodFast's Terms of Service and Privacy Policy.
+	        </p>
+	      </div>
+	      {/* Next: "Add social login buttons (Google, Facebook)" */}
+	    </div>
+	    <div className="bg-gray-50 px-8 py-4 border-t border-gray-100">
+	      <div className="flex justify-center space-x-4 text-sm text-gray-600">
+	        <a href="#" className="hover:text-gray-900 transition-colors duration-200">Help</a>
+	        <a href="#" className="hover:text-gray-900 transition-colors duration-200">Privacy</a>
+	        <a href="#" className="hover:text-gray-900 transition-colors duration-200">Terms</a>
+	      </div>
+	      {/* Next: "Add language selector dropdown" */}
+	    </div>
+	  </div>
+	</div> 
+        </div>
+  )
+}
