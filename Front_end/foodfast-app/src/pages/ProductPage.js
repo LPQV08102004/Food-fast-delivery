@@ -1,5 +1,5 @@
 ﻿import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart, Star, Clock, Flame, Search, MapPin, UtensilsCrossed, Facebook, Twitter, Instagram, Linkedin, Mail, Phone, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -335,6 +335,7 @@ function ProductCard({ product, onAddToCart, onBuyNow, onViewDetails }) {
 }
 
 export default function ProductPage() {
+  const navigate = useNavigate();
   const [cartCount, setCartCount] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedRestaurant, setSelectedRestaurant] = useState("all");
@@ -404,7 +405,12 @@ export default function ProductPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="relative"
+                  onClick={() => navigate('/cart')}
+                >
                   <ShoppingCart className="w-5 h-5" />
                   {cartCount > 0 && (
                     <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-orange-600 hover:bg-orange-600">
