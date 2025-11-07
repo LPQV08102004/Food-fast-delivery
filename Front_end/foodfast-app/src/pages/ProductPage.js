@@ -14,6 +14,7 @@ import authService from "../services/authService";
 import productService from "../services/productService";
 import categoryService from "../services/categoryService";
 import restaurantService from "../services/restaurantService";
+import { useCart } from "../contexts/CartContext";
 
 // Giữ lại categories tĩnh cho filter
 const initialCategories = [
@@ -226,7 +227,7 @@ function ProductCard({ product, onAddToCart, onBuyNow, onViewDetails }) {
 
 export default function ProductPage() {
 	const navigate = useNavigate();
-	const [cartCount, setCartCount] = useState(0);
+	const { addToCart, getTotalItems } = useCart();
 	const [selectedCategory, setSelectedCategory] = useState("all");
 	const [selectedRestaurant, setSelectedRestaurant] = useState("all");
 	const [searchQuery, setSearchQuery] = useState("");
@@ -354,16 +355,12 @@ export default function ProductPage() {
 	});
 
 	const handleAddToCart = (product) => {
-		setCartCount(cartCount + 1);
-		toast.success(product.name + " added to cart!", {
-			description: "Price: $" + product.price.toFixed(2),
-		});
+		addToCart(product, 1);
 	};
 
 	const handleBuyNow = (product) => {
-		toast.success("Proceeding to checkout", {
-			description: "Total: $" + product.price.toFixed(2),
-		});
+		addToCart(product, 1);
+		navigate('/cart');
 	};
 
 	const handleViewDetails = (product) => {
@@ -433,9 +430,9 @@ export default function ProductPage() {
 									onClick={() => navigate('/cart')}
 								>
 									<ShoppingCart className="w-5 h-5" />
-									{cartCount > 0 && (
+									{getTotalItems() > 0 && (
 										<Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-orange-600 hover:bg-orange-600">
-											{cartCount}
+											{getTotalItems()}
 										</Badge>
 									)}
 								</Button>

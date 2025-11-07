@@ -45,18 +45,18 @@ spring:
           uri: lb://PRODUCT-SERVICE
           predicates:
             - Path=/api/restaurants/**
+
+        # Route cho order-service - BỎ StripPrefix
         - id: order-service
           uri: lb://ORDER-SERVICE
           predicates:
             - Path=/api/orders/**
-          filters:
-            - StripPrefix=2
+
+        # Route cho payment-service - BỎ StripPrefix
         - id: payment-service
           uri: lb://PAYMENT-SERVICE
           predicates:
             - Path=/api/payments/**
-          filters:
-            - StripPrefix=2
       discovery:
         locator:
           enabled: true

@@ -14,6 +14,7 @@ public class OrderItem {
     private Long id;
 
     private Long productId;
+    private String productName;  // Thêm tên sản phẩm
     private Integer quantity;
     private Double price;
 

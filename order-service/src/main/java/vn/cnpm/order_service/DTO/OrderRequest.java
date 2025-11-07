@@ -1,7 +1,6 @@
 package vn.cnpm.order_service.DTO;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 import java.util.List;
@@ -11,6 +10,8 @@ public class OrderRequest {
     @NotNull
     private Long userId;
     private List<OrderItemRequest> items;
+    private Double totalPrice;  // Thêm totalPrice để nhận từ frontend
+
     @Data
     public static class OrderItemRequest {
         private long productId;

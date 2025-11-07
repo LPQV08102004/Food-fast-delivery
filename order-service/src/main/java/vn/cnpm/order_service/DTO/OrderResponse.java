@@ -11,14 +11,19 @@ import java.util.List;
 @Builder
 public class OrderResponse {
     private Long id;
+    private Long userId;
     private Double totalPrice;
     private OrderStatus status;
-    private List<OrderItemResponse> items;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private List<OrderItemResponse> orderItems;
+
     @Data
     @Builder
     public static class OrderItemResponse {
-    private Long productId;
-    private Integer quantity;
-    private Double price;}
+        private Long productId;
+        private String productName;  // Thêm tên sản phẩm
+        private Integer quantity;
+        private Double price;
+    }
 }
-
