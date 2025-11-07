@@ -8,6 +8,7 @@ import ProfilePage from './pages/ProfilePage';
 import CartPage from './pages/CartPage';
 import PaymentPage from './pages/PaymentPage';
 import AdminPage from './pages/AdminPage';
+import TestConnectionPage from './pages/TestConnectionPage';
 import './App.css';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/test-connection" element={<TestConnectionPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

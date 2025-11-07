@@ -1,10 +1,23 @@
+/* eslint-disable */
+// ============================================
+// ⚠️ FILE VÍ DỤ - KHÔNG SỬ DỤNG TRỰC TIẾP
+// ============================================
+// File này chỉ để THAM KHẢO cách tích hợp API
+// Không phải file thực tế để chạy
+// Có thể có lỗi compile - đây là bình thường
+// ============================================
+
 // ============================================
 // VÍ DỤ: Cập nhật LoginPage.js với API
 // ============================================
 
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
+import productService from '../services/productService';
+import orderService from '../services/orderService';
+import paymentService from '../services/paymentService';
+import userService from '../services/userService';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';

@@ -23,6 +23,10 @@ public class ProductController {
     public ProductResponse getProductById(@PathVariable("id") Long id) {
         return productService.getProductById(id);
     }
+    @GetMapping("/{name}")
+    public List<ProductResponse> getProductsByNameContaining(@RequestParam("name") String name) {
+        return productService.getProductsByNameContaining(name);
+    }
     @PutMapping("/{id}")
     public ProductResponse updateProduct(@PathVariable("id") Long id, @RequestBody ProductRequest request) {
         return productService.updateProduct(id, request);
@@ -38,7 +42,10 @@ public class ProductController {
     @GetMapping("/category/{categoryId}")
     public List<ProductResponse> getProductsByCategoryId(@PathVariable("categoryId") Long categoryId) {
         return productService.getProductsByCategoryId(categoryId);
-
+    }
+    @GetMapping("/restaurant/{restaurantId}")
+    public List<ProductResponse> getProductsByRestaurantId(@PathVariable("restaurantId") Long restaurantId) {
+        return productService.getProductsByRestaurantId(restaurantId);
     }
     @GetMapping("/category/{name}")
     public List<ProductResponse> getProductsByCategoryName(@RequestParam("categoryName") String categoryName) {

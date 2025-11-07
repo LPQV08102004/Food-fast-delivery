@@ -8,5 +8,5 @@ public class registerRequest {
     private String password;
     private String email;
     private String fullName;
-
+    private String phone; // Thêm trường phone (optional)
 }

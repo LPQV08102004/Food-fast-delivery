@@ -1,39 +1,73 @@
-
 server:
   port: 8080
 
 spring:
+  application:
+    name: api-gateway
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
       routes:
         # Route cho authentication
         - id: user-service-auth
-          uri: http://localhost:8081
+          uri: lb://USER-SERVICE
           predicates:
             - Path=/api/auth/**
 
         # Route cho user management
         - id: user-service-users
-          uri: http://localhost:8081
+          uri: lb://USER-SERVICE
           predicates:
             - Path=/api/users/**
 
         - id: product-service
-          uri: http://localhost:8082
+          uri: lb://PRODUCT-SERVICE
           predicates:
             - Path=/api/products/**
-          filters:
-            - StripPrefix=2
+
+        - id: category-service
+          uri: lb://PRODUCT-SERVICE
+          predicates:
+            - Path=/api/categories/**
+
+        - id: restaurant-service
+          uri: lb://PRODUCT-SERVICE
+          predicates:
+            - Path=/api/restaurants/**
         - id: order-service
-          uri: http://localhost:8083
+          uri: lb://ORDER-SERVICE
           predicates:
             - Path=/api/orders/**
           filters:
             - StripPrefix=2
         - id: payment-service
-          uri: http://localhost:8084
+          uri: lb://PAYMENT-SERVICE
           predicates:
             - Path=/api/payments/**
           filters:
             - StripPrefix=2
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: false
+    instance-id: ${spring.application.name}:${server.port}

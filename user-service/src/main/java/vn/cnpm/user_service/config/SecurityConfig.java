@@ -22,6 +22,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // TẮT CORS ở đây vì Gateway đã xử lý CORS
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
@@ -44,4 +45,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-

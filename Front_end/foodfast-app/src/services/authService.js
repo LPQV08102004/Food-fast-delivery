@@ -18,7 +18,10 @@ const authService = {
       const response = await api.post('/auth/login', credentials);
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        // Kiểm tra user tồn tại trước khi lưu
+        if (response.data.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+        }
       }
       return response.data;
     } catch (error) {
@@ -35,8 +38,16 @@ const authService = {
   // Lấy user hiện tại
   getCurrentUser: () => {
     const userStr = localStorage.getItem('user');
-    if (userStr) {
-      return JSON.parse(userStr);
+    // Kiểm tra userStr không phải null, undefined, hoặc "undefined"
+    if (userStr && userStr !== 'undefined' && userStr !== 'null') {
+      try {
+        return JSON.parse(userStr);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        // Nếu parse lỗi, xóa dữ liệu hỏng
+        localStorage.removeItem('user');
+        return null;
+      }
     }
     return null;
   },

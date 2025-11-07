@@ -1,8 +1,47 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock } from 'lucide-react';
+import authService from '../services/authService';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await authService.login({
+        username: formData.username,
+        password: formData.password
+      });
+
+      console.log('Login successful:', response);
+
+      // Chuyển sang trang sản phẩm sau khi đăng nhập thành công
+      navigate('/products');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4 py-8">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
@@ -23,18 +62,27 @@ export default function LoginPage() {
           
           <h2 className="text-xl font-bold text-center mb-6 text-gray-800">Log in to your account</h2>
           
-          <form>
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="email">
-                Email
+              <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="username">
+                Username
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input 
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6600] focus:border-transparent transition-all duration-200"
-                  id="email"
-                  type="email" 
-                  placeholder="your@email.com" 
+                  id="username"
+                  name="username"
+                  type="text"
+                  placeholder="your username"
+                  value={formData.username}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -48,9 +96,12 @@ export default function LoginPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input 
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6600] focus:border-transparent transition-all duration-200"
-                  id="password" 
-                  type="password" 
+                  id="password"
+                  name="password"
+                  type="password"
                   placeholder="••••••••" 
+                  value={formData.password}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -76,9 +127,10 @@ export default function LoginPage() {
             
             <button 
               type="submit" 
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#FF6600] hover:bg-[#e05c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6600] transition-all duration-200"
+              disabled={loading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#FF6600] hover:bg-[#e05c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6600] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Log in
+              {loading ? 'Đang đăng nhập...' : 'Log in'}
             </button>
           </form>
           

@@ -17,5 +17,6 @@ public class ProductResponse {
     private int stock;
     private Boolean isActive;
     private Long categoryId;
+    private Long restaurantId;  // Thêm restaurantId
     private List<String> image_urls;
 }

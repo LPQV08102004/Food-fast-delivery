@@ -29,11 +29,24 @@ public class AuthServiceImpl implements AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .fullName(request.getFullName())
+                .phone(request.getPhone()) // Thêm phone
                 .role(Role.builder().id(1L).name("USER").build())
                 .build();
         userRepository.save(user);
-        return new AuthResponse(jwtUtils.generateToken(user.getUsername()));
+
+        // Tạo UserDTO để trả về (không bao gồm password)
+        UserDTO userDTO = UserDTO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .phone(user.getPhone())
+                .role(user.getRole().getName())
+                .build();
+
+        return new AuthResponse(jwtUtils.generateToken(user.getUsername()), userDTO);
     }
+
     @Override
     public AuthResponse login(loginRequest request) {
         authenticationManager.authenticate(
@@ -41,6 +54,17 @@ public class AuthServiceImpl implements AuthService {
                         request.getUsername(), request.getPassword()));
         var user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return new AuthResponse(jwtUtils.generateToken(user.getUsername()));
+
+        // Tạo UserDTO để trả về (không bao gồm password)
+        UserDTO userDTO = UserDTO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .phone(user.getPhone())
+                .role(user.getRole().getName())
+                .build();
+
+        return new AuthResponse(jwtUtils.generateToken(user.getUsername()), userDTO);
     }
 }

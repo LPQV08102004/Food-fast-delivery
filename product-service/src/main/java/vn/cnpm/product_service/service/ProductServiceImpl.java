@@ -49,6 +49,15 @@ public class ProductServiceImpl implements ProductService {
         List<Product> products = productRepository.findByCategoryName(categoryName);
         return products.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
+    public List<ProductResponse> getProductsByNameContaining(String name) {
+        List<Product> products = productRepository.findByNameContainingIgnoreCase(name);
+        return products.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+    public List<ProductResponse> getProductsByRestaurantId(Long restaurantId) {
+        List<Product> products = productRepository.findByRestaurantId(restaurantId);
+        return products.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
     public ProductResponse updateProduct(Long id, ProductRequest request) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -75,7 +84,8 @@ public class ProductServiceImpl implements ProductService {
                 .price(product.getPrice())
                 .stock(product.getStock())
                 .isActive(product.getIsActive())
-                .categoryId(product.getCategory().getId())
+                .categoryId(product.getCategory() != null ? product.getCategory().getId() : null)
+                .restaurantId(product.getRestaurant() != null ? product.getRestaurant().getId() : null)
                 .image_urls(product.getImages() != null
                         ? product.getImages().stream().map(Product_image::getImageUrl).toList()
                         : List.of())

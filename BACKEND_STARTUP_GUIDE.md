@@ -181,6 +181,11 @@ API Gateway Routes:
 ```powershell
 # Terminal 7
 cd C:\Study\CNPM\Food-fast-delivery\Front_end\foodfast-app
+
+# Cài đặt dependencies (chạy lần đầu tiên hoặc khi có thay đổi package.json)
+npm install
+
+# Start frontend
 npm start
 ```
 
@@ -190,6 +195,8 @@ webpack compiled successfully
 ```
 
 Frontend URL: http://localhost:3000
+
+**Lưu ý:** Nếu gặp lỗi `Module not found: Error: Can't resolve 'axios'` hoặc package nào khác, chạy `npm install` trước khi start.
 
 ---
 

@@ -10,6 +10,8 @@ public interface ProductService {
     ProductResponse createProduct(ProductRequest request);
     ProductResponse getProductById(Long id);
     List<ProductResponse> getProductsByCategoryId(Long id);
+    List<ProductResponse> getProductsByRestaurantId(Long id);
+    List<ProductResponse> getProductsByNameContaining(String name);
     List<ProductResponse> getProductsByCategoryName(String name);
     List<ProductResponse> getAllProducts();
     ProductResponse updateProduct(Long id, ProductRequest request);

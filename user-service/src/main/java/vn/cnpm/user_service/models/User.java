@@ -28,6 +28,9 @@ public class User {
         @Column(nullable = false)
         private String fullName;
 
+        @Column
+        private String phone; // Thêm trường phone (có thể null)
+
         @ManyToOne
         @JoinColumn(name = "role_id")
         private Role role;
