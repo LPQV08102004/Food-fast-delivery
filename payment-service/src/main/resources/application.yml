@@ -3,14 +3,19 @@ server:
 
 spring:
   datasource:
-    url: jdbc:h2:mem:paymentdb
-    driverClassName: org.h2.Driver
-    username: sa
-    password:
-  h2:
-    console:
-      enabled: true
+    url: jdbc:mysql://localhost:3306/payment_service
+    username: root
+    password: 08102004
+    driver-class-name: com.mysql.cj.jdbc.Driver
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#  h2:
+#    console:
+#      enabled: true
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+

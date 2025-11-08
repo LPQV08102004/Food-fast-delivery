@@ -3,6 +3,7 @@ package vn.cnpm.paymentservice.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payments")
@@ -33,6 +34,10 @@ public class Payment {
         createdAt = Instant.now();
         updatedAt = createdAt;
         if (attemptCount == null) attemptCount = 0;
+        // Tự động generate idempotency_key nếu null
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            idempotencyKey = UUID.randomUUID().toString();
+        }
     }
 
     @PreUpdate

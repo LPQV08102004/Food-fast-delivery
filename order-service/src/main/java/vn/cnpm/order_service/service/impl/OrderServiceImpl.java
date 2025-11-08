@@ -29,7 +29,18 @@ public class OrderServiceImpl implements OrderService {
         Order order = Order.builder()
                 .userId(request.getUserId())
                 .status(OrderStatus.NEW)
+                .paymentMethod(request.getPaymentMethod())
+                .paymentStatus("PENDING")
                 .build();
+
+        // Lưu thông tin delivery nếu có
+        if (request.getDeliveryInfo() != null) {
+            order.setDeliveryFullName(request.getDeliveryInfo().getFullName());
+            order.setDeliveryPhone(request.getDeliveryInfo().getPhone());
+            order.setDeliveryAddress(request.getDeliveryInfo().getAddress());
+            order.setDeliveryCity(request.getDeliveryInfo().getCity());
+            order.setDeliveryNotes(request.getDeliveryInfo().getNotes());
+        }
 
         // Tạo order items và fetch thông tin sản phẩm
         double totalPrice = 0.0;
@@ -61,23 +72,36 @@ public class OrderServiceImpl implements OrderService {
         // Lưu order vào database (cascade sẽ tự động lưu items)
         Order saved = orderRepository.save(order);
 
+        // Gọi payment service để xử lý thanh toán
+        try {
+            PaymentDTO paymentRequest = PaymentDTO.builder()
+                    .orderId(saved.getId())
+                    .amount(saved.getTotalPrice())
+                    .paymentMethod(saved.getPaymentMethod())
+                    .build();
+
+            PaymentDTO paymentResponse = paymentClient.createPayment(paymentRequest);
+
+            // Cập nhật payment status
+            saved.setPaymentStatus(paymentResponse.getStatus());
+
+            // Nếu thanh toán thành công, cập nhật order status
+            if ("SUCCESS".equals(paymentResponse.getStatus())) {
+                saved.setStatus(OrderStatus.CONFIRMED);
+            } else {
+                saved.setStatus(OrderStatus.CANCELLED);
+            }
+
+            saved = orderRepository.save(saved);
+        } catch (Exception e) {
+            // Nếu payment service fail, vẫn giữ order nhưng đánh dấu payment failed
+            saved.setPaymentStatus("FAILED");
+            saved.setStatus(OrderStatus.CANCELLED);
+            saved = orderRepository.save(saved);
+        }
+
         // Map sang response
-        return OrderResponse.builder()
-                .id(saved.getId())
-                .userId(saved.getUserId())
-                .status(saved.getStatus())
-                .totalPrice(saved.getTotalPrice())
-                .createdAt(saved.getCreatedAt())
-                .updatedAt(saved.getUpdatedAt())
-                .orderItems(saved.getOrderItems().stream()
-                        .map(it -> OrderResponse.OrderItemResponse.builder()
-                                .productId(it.getProductId())
-                                .productName(it.getProductName())  // Thêm tên sản phẩm
-                                .quantity(it.getQuantity())
-                                .price(it.getPrice())
-                                .build())
-                        .collect(Collectors.toList()))
-                .build();
+        return mapToDto(saved);
     }
 
     @Override
@@ -101,6 +125,8 @@ public class OrderServiceImpl implements OrderService {
                 .userId(o.getUserId())
                 .status(o.getStatus())
                 .totalPrice(o.getTotalPrice())
+                .paymentMethod(o.getPaymentMethod())
+                .paymentStatus(o.getPaymentStatus())
                 .createdAt(o.getCreatedAt())
                 .updatedAt(o.getUpdatedAt())
                 .orderItems(o.getOrderItems() != null ? o.getOrderItems().stream()

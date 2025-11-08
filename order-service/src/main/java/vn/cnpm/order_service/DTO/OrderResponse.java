@@ -14,6 +14,8 @@ public class OrderResponse {
     private Long userId;
     private Double totalPrice;
     private OrderStatus status;
+    private String paymentMethod;
+    private String paymentStatus;
     private Instant createdAt;
     private Instant updatedAt;
     private List<OrderItemResponse> orderItems;

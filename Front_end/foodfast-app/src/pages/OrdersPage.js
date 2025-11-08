@@ -358,6 +358,35 @@ export default function OrdersPage() {
                       {statusText[selectedOrder.status]}
                     </Badge>
                   </div>
+
+                  {/* Thêm thông tin Payment */}
+                  {selectedOrder.paymentMethod && (
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500">
+                        Payment Method
+                      </span>
+                      <span className="block text-sm font-medium text-gray-900 capitalize">
+                        {selectedOrder.paymentMethod}
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedOrder.paymentStatus && (
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500">
+                        Payment Status
+                      </span>
+                      <Badge className={
+                        selectedOrder.paymentStatus === 'SUCCESS'
+                          ? 'bg-green-100 text-green-800'
+                          : selectedOrder.paymentStatus === 'FAILED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }>
+                        {selectedOrder.paymentStatus}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
 
                 <Separator className="my-4" />

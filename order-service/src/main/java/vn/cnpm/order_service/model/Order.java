@@ -22,10 +22,23 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
+    // Thêm thông tin payment
+    private String paymentMethod;  // card, wallet, cash
+    private String paymentStatus;  // SUCCESS, FAILED, PENDING
+
+    // Thêm thông tin delivery
+    private String deliveryFullName;
+    private String deliveryPhone;
+    private String deliveryAddress;
+    private String deliveryCity;
+    private String deliveryNotes;
+
     private Instant createdAt;
     private Instant updatedAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> orderItems;
+
     @PrePersist
     public void prePersist() {
         createdAt = Instant.now();

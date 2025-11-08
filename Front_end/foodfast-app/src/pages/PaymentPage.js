@@ -82,6 +82,7 @@ export default function PaymentPage() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderId, setOrderId] = useState(null);
+  const [orderResponse, setOrderResponse] = useState(null); // Thêm state để lưu full response
 
   const [deliveryInfo, setDeliveryInfo] = useState({
     fullName: "",
@@ -160,14 +161,26 @@ export default function PaymentPage() {
         totalPrice: total
       };
 
+      console.log('Creating order with data:', orderData); // Debug log
+
       // Create order via API
       const response = await orderService.createOrder(orderData);
 
+      console.log('Order response:', response); // Debug log
+
       setOrderId(response.id);
+      setOrderResponse(response); // Lưu full response
       setShowSuccessDialog(true);
       clearCart();
 
-      toast.success("Order placed successfully!");
+      // Show success/failed based on payment status
+      if (response.paymentStatus === 'SUCCESS') {
+        toast.success("Order placed and payment successful!");
+      } else if (response.paymentStatus === 'FAILED') {
+        toast.error("Order created but payment failed. Please contact support.");
+      } else {
+        toast.success("Order placed successfully!");
+      }
     } catch (error) {
       console.error("Error creating order:", error);
       toast.error(error.message || "Failed to place order. Please try again.");
@@ -440,6 +453,17 @@ export default function PaymentPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h2>
             <p className="text-gray-600 mb-1">Order ID: #{orderId}</p>
             <p className="text-gray-600 mb-6">Your delicious food is on its way!</p>
+
+            {/* Payment status message */}
+            {orderResponse && (
+              <p className="text-gray-600 mb-4">
+                Payment Status:{" "}
+                <span className={orderResponse.paymentStatus === 'SUCCESS' ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+                  {orderResponse.paymentStatus}
+                </span>
+              </p>
+            )}
+
             <div className="flex gap-3 w-full">
               <Button
                 variant="outline"
@@ -461,4 +485,3 @@ export default function PaymentPage() {
     </div>
   );
 }
-
