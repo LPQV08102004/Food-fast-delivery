@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { 
+import React, { useState, useEffect } from 'react';
+import {
   Users, 
   ShoppingBag, 
   Plane, 
@@ -14,7 +14,8 @@ import {
   Search,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -22,6 +23,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { toast } from 'sonner';
+
+// Import services
+import adminService from '../services/adminService';
+import userService from '../services/userService';
+import orderService from '../services/orderService';
+import productService from '../services/productService';
+import restaurantService from '../services/restaurantService';
 
 // Mock Data
 const monthlyData = [
@@ -256,36 +265,95 @@ function Sidebar({ activeScreen, onNavigate }) {
 
 // Dashboard Screen
 function ReportScreen() {
-  const kpiData = [
+  const [loading, setLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [monthlyData, setMonthlyData] = useState([]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch dashboard statistics
+      const stats = await adminService.getDashboardStats();
+      setDashboardStats(stats);
+
+      // Fetch monthly revenue data
+      const revenueData = await adminService.getMonthlyRevenue(new Date().getFullYear());
+      setMonthlyData(revenueData);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+
+      // Fallback to mock data if API fails
+      setDashboardStats({
+        totalOrders: 12345,
+        ordersToday: 234,
+        totalRevenue: 789456,
+        totalUsers: 8492
+      });
+
+      setMonthlyData([
+        { month: 'Jan', revenue: 45000, expenses: 28000 },
+        { month: 'Feb', revenue: 52000, expenses: 32000 },
+        { month: 'Mar', revenue: 48000, expenses: 30000 },
+        { month: 'Apr', revenue: 61000, expenses: 35000 },
+        { month: 'May', revenue: 55000, expenses: 33000 },
+        { month: 'Jun', revenue: 67000, expenses: 38000 },
+        { month: 'Jul', revenue: 72000, expenses: 42000 },
+        { month: 'Aug', revenue: 68000, expenses: 40000 },
+        { month: 'Sep', revenue: 74000, expenses: 43000 },
+        { month: 'Oct', revenue: 79000, expenses: 45000 },
+        { month: 'Nov', revenue: 85000, expenses: 48000 },
+        { month: 'Dec', revenue: 91000, expenses: 52000 },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const kpiData = dashboardStats ? [
     {
       title: 'Total Orders',
-      value: '12,345',
+      value: dashboardStats.totalOrders?.toLocaleString() || '0',
       icon: ShoppingBag,
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',
     },
     {
       title: 'Order today',
-      value: '234',
+      value: dashboardStats.ordersToday?.toLocaleString() || '0',
       icon: TrendingUp,
       bgColor: 'bg-green-50',
       iconColor: 'text-green-600',
     },
     {
       title: 'Revenue',
-      value: '$789,456',
+      value: `$${dashboardStats.totalRevenue?.toLocaleString() || '0'}`,
       icon: DollarSign,
       bgColor: 'bg-purple-50',
       iconColor: 'text-purple-600',
     },
     {
       title: 'Total User',
-      value: '8,492',
+      value: dashboardStats.totalUsers?.toLocaleString() || '0',
       icon: Users,
       bgColor: 'bg-orange-50',
       iconColor: 'text-orange-600',
     },
-  ];
+  ] : [];
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -335,6 +403,59 @@ function ReportScreen() {
 
 // User Screen
 function UserScreen() {
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.getAllUsers();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (userId, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      await adminService.toggleUserStatus(userId, newStatus);
+      toast.success('User status updated successfully');
+      fetchUsers(); // Refresh list
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      toast.error('Failed to update user status');
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) {
+      return;
+    }
+
+    try {
+      await adminService.deleteUser(userId);
+      toast.success('User deleted successfully');
+      fetchUsers(); // Refresh list
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
+    }
+  };
+
+  const filteredUsers = users.filter(user =>
+    user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -345,6 +466,8 @@ function UserScreen() {
             <Input 
               placeholder="Search users..." 
               className="pl-9 w-64"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Button className="bg-blue-600 hover:bg-blue-700">
@@ -354,69 +477,140 @@ function UserScreen() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>No.</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Password</TableHead>
-              <TableHead>State</TableHead>
-              <TableHead>Edit</TableHead>
-              <TableHead>Delete</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.id}</TableCell>
-                <TableCell>{user.username}</TableCell>
-                <TableCell>{user.password}</TableCell>
-                <TableCell>
-                  <Badge 
-                    className={
-                      user.state === 'Active' 
-                        ? 'bg-green-100 text-green-700 hover:bg-green-100' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-100'
-                    }
-                  >
-                    {user.state}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm">
-                    <Edit className="w-4 h-4 text-blue-600" />
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </Button>
-                </TableCell>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>No.</TableHead>
+                <TableHead>Username</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>State</TableHead>
+                <TableHead>Edit</TableHead>
+                <TableHead>Delete</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user, index) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{index + 1}</TableCell>
+                    <TableCell>{user.username}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.phone || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          user.status === 'Active'
+                            ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-100'
+                        }
+                        onClick={() => handleToggleStatus(user.id, user.status)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {user.status || 'Active'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="w-4 h-4 text-blue-600" />
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-gray-500">
+                    No users found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
 
 // Order Screen
 function OrderScreen() {
+  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState([]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.getAllOrders();
+      setOrders(data);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast.error('Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewOrder = async (orderId) => {
+    try {
+      const orderDetails = await adminService.getOrderDetails(orderId);
+      // You can show a modal or navigate to details page
+      console.log('Order details:', orderDetails);
+      toast.success('Order details loaded');
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+      toast.error('Failed to load order details');
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Completed':
+      case 'COMPLETED':
         return 'bg-green-100 text-green-700 hover:bg-green-100';
       case 'Pending':
+      case 'PENDING':
         return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100';
       case 'In Progress':
+      case 'IN_PROGRESS':
+      case 'PROCESSING':
         return 'bg-blue-100 text-blue-700 hover:bg-blue-100';
       case 'Cancelled':
+      case 'CANCELLED':
         return 'bg-red-100 text-red-700 hover:bg-red-100';
       default:
         return 'bg-gray-100 text-gray-700 hover:bg-gray-100';
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
+  const formatTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString();
   };
 
   return (
@@ -429,50 +623,119 @@ function OrderScreen() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Total Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Name Restaurant</TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell className="font-medium">{order.id}</TableCell>
-                <TableCell>{order.customer}</TableCell>
-                <TableCell>{order.time}</TableCell>
-                <TableCell>{order.date}</TableCell>
-                <TableCell className="font-semibold">{order.amount}</TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(order.status)}>
-                    {order.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>{order.restaurant}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm">
-                    <Eye className="w-4 h-4 text-blue-600" />
-                  </Button>
-                </TableCell>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Time</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Total Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Restaurant</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {orders.length > 0 ? (
+                orders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">{order.id}</TableCell>
+                    <TableCell>{order.customerName || order.userId}</TableCell>
+                    <TableCell>{formatTime(order.createdAt)}</TableCell>
+                    <TableCell>{formatDate(order.createdAt)}</TableCell>
+                    <TableCell className="font-semibold">${order.totalAmount?.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(order.status)}>
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{order.restaurantName || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewOrder(order.id)}
+                      >
+                        <Eye className="w-4 h-4 text-blue-600" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-gray-500">
+                    No orders found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
 
 // Product Screen
 function ProductScreen() {
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.getAllProducts();
+      setProducts(data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast.error('Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveProduct = async (productId) => {
+    try {
+      await adminService.approveProduct(productId);
+      toast.success('Product approved successfully');
+      fetchProducts(); // Refresh list
+    } catch (error) {
+      console.error('Error approving product:', error);
+      toast.error('Failed to approve product');
+    }
+  };
+
+  const handleRejectProduct = async (productId) => {
+    const reason = prompt('Enter rejection reason:');
+    if (!reason) return;
+
+    try {
+      await adminService.rejectProduct(productId, reason);
+      toast.success('Product rejected');
+      fetchProducts(); // Refresh list
+    } catch (error) {
+      console.error('Error rejecting product:', error);
+      toast.error('Failed to reject product');
+    }
+  };
+
+  const filteredProducts = products.filter(product =>
+    product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.category?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -483,6 +746,8 @@ function ProductScreen() {
             <Input 
               placeholder="Search products..." 
               className="pl-9 w-64"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Button className="bg-blue-600 hover:bg-blue-700">
@@ -492,51 +757,128 @@ function ProductScreen() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Catalog</TableHead>
-              <TableHead>Restaurant</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {products.map((product, index) => (
-              <TableRow key={index}>
-                <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell className="font-semibold">{product.price}</TableCell>
-                <TableCell>{product.catalog}</TableCell>
-                <TableCell>{product.restaurant}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button variant="link" size="sm" className="text-blue-600 p-0 h-auto">
-                      <Eye className="w-4 h-4 mr-1" />
-                      Detail
-                    </Button>
-                    <span className="text-gray-300">|</span>
-                    <Button variant="link" size="sm" className="text-red-600 p-0 h-auto">
-                      Cancel
-                    </Button>
-                    <span className="text-gray-300">|</span>
-                    <Button variant="link" size="sm" className="text-green-600 p-0 h-auto">
-                      Approve
-                    </Button>
-                  </div>
-                </TableCell>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Restaurant</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell className="font-semibold">${product.price?.toFixed(2)}</TableCell>
+                    <TableCell>{product.category || product.catalog}</TableCell>
+                    <TableCell>{product.restaurantName || 'N/A'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="link" size="sm" className="text-blue-600 p-0 h-auto">
+                          <Eye className="w-4 h-4 mr-1" />
+                          Detail
+                        </Button>
+                        <span className="text-gray-300">|</span>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="text-red-600 p-0 h-auto"
+                          onClick={() => handleRejectProduct(product.id)}
+                        >
+                          Cancel
+                        </Button>
+                        <span className="text-gray-300">|</span>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="text-green-600 p-0 h-auto"
+                          onClick={() => handleApproveProduct(product.id)}
+                        >
+                          Approve
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-gray-500">
+                    No products found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
 
 // Restaurant List Screen
 function RestaurantListScreen() {
+  const [loading, setLoading] = useState(true);
+  const [restaurants, setRestaurants] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchRestaurants();
+  }, []);
+
+  const fetchRestaurants = async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.getAllRestaurants();
+      setRestaurants(data);
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+      toast.error('Failed to load restaurants');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteRestaurant = async (restaurantId) => {
+    if (!window.confirm('Are you sure you want to delete this restaurant?')) {
+      return;
+    }
+
+    try {
+      await adminService.deleteRestaurant(restaurantId);
+      toast.success('Restaurant deleted successfully');
+      fetchRestaurants(); // Refresh list
+    } catch (error) {
+      console.error('Error deleting restaurant:', error);
+      toast.error('Failed to delete restaurant');
+    }
+  };
+
+  const handleToggleStatus = async (restaurantId, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      await adminService.toggleRestaurantStatus(restaurantId, newStatus);
+      toast.success('Restaurant status updated successfully');
+      fetchRestaurants(); // Refresh list
+    } catch (error) {
+      console.error('Error updating restaurant status:', error);
+      toast.error('Failed to update restaurant status');
+    }
+  };
+
+  const filteredRestaurants = restaurants.filter(restaurant =>
+    restaurant.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    restaurant.address?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -547,6 +889,8 @@ function RestaurantListScreen() {
             <Input 
               placeholder="Search restaurants..." 
               className="pl-9 w-64"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Button className="bg-blue-600 hover:bg-blue-700">
@@ -556,53 +900,74 @@ function RestaurantListScreen() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Res_id</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Main_address</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>State</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {restaurants.map((restaurant) => (
-              <TableRow key={restaurant.id}>
-                <TableCell className="font-medium">{restaurant.id}</TableCell>
-                <TableCell>{restaurant.name}</TableCell>
-                <TableCell>{restaurant.address}</TableCell>
-                <TableCell>{restaurant.contact}</TableCell>
-                <TableCell>
-                  <Badge 
-                    className={
-                      restaurant.state === 'Active' 
-                        ? 'bg-green-100 text-green-700 hover:bg-green-100' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-100'
-                    }
-                  >
-                    {restaurant.state}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button variant="link" size="sm" className="text-blue-600 p-0 h-auto">
-                      <Eye className="w-4 h-4 mr-1" />
-                      Detail
-                    </Button>
-                    <span className="text-gray-300">|</span>
-                    <Button variant="link" size="sm" className="text-red-600 p-0 h-auto">
-                      Delete
-                    </Button>
-                  </div>
-                </TableCell>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Res_id</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Main_address</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>State</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filteredRestaurants.length > 0 ? (
+                filteredRestaurants.map((restaurant) => (
+                  <TableRow key={restaurant.id}>
+                    <TableCell className="font-medium">{restaurant.id}</TableCell>
+                    <TableCell>{restaurant.name}</TableCell>
+                    <TableCell>{restaurant.address}</TableCell>
+                    <TableCell>{restaurant.contact || restaurant.phone}</TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          restaurant.status === 'Active' || restaurant.state === 'Active'
+                            ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-100'
+                        }
+                        onClick={() => handleToggleStatus(restaurant.id, restaurant.status || restaurant.state)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {restaurant.status || restaurant.state || 'Active'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="link" size="sm" className="text-blue-600 p-0 h-auto">
+                          <Eye className="w-4 h-4 mr-1" />
+                          Detail
+                        </Button>
+                        <span className="text-gray-300">|</span>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="text-red-600 p-0 h-auto"
+                          onClick={() => handleDeleteRestaurant(restaurant.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-gray-500">
+                    No restaurants found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

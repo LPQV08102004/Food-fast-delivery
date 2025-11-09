@@ -31,6 +31,9 @@ public class User {
         @Column
         private String phone; // Thêm trường phone (có thể null)
 
+        @Column
+        private String status = "Active"; // Thêm trường status
+
         @ManyToOne
         @JoinColumn(name = "role_id")
         private Role role;

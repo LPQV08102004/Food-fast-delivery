@@ -32,8 +32,14 @@ export default function LoginPage() {
 
       console.log('Login successful:', response);
 
-      // Chuyển sang trang sản phẩm sau khi đăng nhập thành công
-      navigate('/products');
+      // Check role và redirect phù hợp
+      if (authService.isAdmin()) {
+        // Admin → Admin Dashboard
+        navigate('/admin');
+      } else {
+        // User thường → Products Page
+        navigate('/products');
+      }
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');

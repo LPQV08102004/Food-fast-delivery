@@ -44,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
                 .role(user.getRole().getName())
                 .build();
 
-        return new AuthResponse(jwtUtils.generateToken(user.getUsername()), userDTO);
+        return new AuthResponse(jwtUtils.generateToken(user), userDTO);
     }
 
     @Override
@@ -65,6 +65,6 @@ public class AuthServiceImpl implements AuthService {
                 .role(user.getRole().getName())
                 .build();
 
-        return new AuthResponse(jwtUtils.generateToken(user.getUsername()), userDTO);
+        return new AuthResponse(jwtUtils.generateToken(user), userDTO);
     }
 }

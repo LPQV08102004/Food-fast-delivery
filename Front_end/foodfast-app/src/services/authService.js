@@ -6,6 +6,12 @@ const authService = {
   register: async (userData) => {
     try {
       const response = await api.post('/auth/register', userData);
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        if (response.data.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+        }
+      }
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -18,7 +24,6 @@ const authService = {
       const response = await api.post('/auth/login', credentials);
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
-        // Kiểm tra user tồn tại trước khi lưu
         if (response.data.user) {
           localStorage.setItem('user', JSON.stringify(response.data.user));
         }
@@ -38,13 +43,11 @@ const authService = {
   // Lấy user hiện tại
   getCurrentUser: () => {
     const userStr = localStorage.getItem('user');
-    // Kiểm tra userStr không phải null, undefined, hoặc "undefined"
     if (userStr && userStr !== 'undefined' && userStr !== 'null') {
       try {
         return JSON.parse(userStr);
       } catch (error) {
         console.error('Error parsing user data:', error);
-        // Nếu parse lỗi, xóa dữ liệu hỏng
         localStorage.removeItem('user');
         return null;
       }
@@ -60,6 +63,18 @@ const authService = {
   // Lấy token
   getToken: () => {
     return localStorage.getItem('token');
+  },
+
+  // Kiểm tra user có phải admin không
+  isAdmin: () => {
+    const user = authService.getCurrentUser();
+    return user?.role === 'ADMIN';
+  },
+
+  // Kiểm tra role của user
+  getUserRole: () => {
+    const user = authService.getCurrentUser();
+    return user?.role || null;
   },
 };
 

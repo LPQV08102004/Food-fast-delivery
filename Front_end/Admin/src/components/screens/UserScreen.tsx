@@ -54,10 +54,10 @@ export function UserScreen() {
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.password}</TableCell>
                 <TableCell>
-                  <Badge 
+                  <Badge
                     className={
-                      user.state === 'Active' 
-                        ? 'bg-green-100 text-green-700 hover:bg-green-100' 
+                      user.state === 'Active'
+                        ? 'bg-green-100 text-green-700 hover:bg-green-100'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-100'
                     }
                   >

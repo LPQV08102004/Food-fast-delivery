@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Base URL của API Gateway
+// Base URL của API Gateway - THAY ĐỔI ĐỂ GỌI TRỰC TIẾP USER SERVICE
 const API_BASE_URL = 'http://localhost:8080/api';
 
 // Tạo axios instance
