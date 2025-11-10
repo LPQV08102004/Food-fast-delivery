@@ -24,6 +24,17 @@ repositories {
 	mavenCentral()
 }
 
+// Chỉ định phiên bản Spring Cloud BOM - ĐẶT TRƯỚC dependencies
+ext {
+    set('springCloudVersion', "2025.0.0")
+}
+
+// Import Spring Cloud BOM - ĐẶT TRƯỚC dependencies
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -35,28 +46,10 @@ dependencies {
 
 	// MySQL Driver - Thay thế H2
 	runtimeOnly 'com.mysql:mysql-connector-j:8.0.33'
-	// Hoặc sử dụng version mới nhất
-	// runtimeOnly 'com.mysql:mysql-connector-j'
-
-	// Comment out H2 nếu muốn dùng MySQL
-	// runtimeOnly 'com.h2database:h2'
 
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-// Chỉ định phiên bản Spring Cloud BOM
-ext {
-    set('springCloudVersion', "2025.0.0") // Thay bằng phiên bản Spring Cloud tương thích với Spring Boot của bạn
-}
-
-// Import Spring Cloud BOM
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-
-    }
 }
 
 tasks.named('test') {

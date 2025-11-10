@@ -10,6 +10,8 @@ import CartPage from './pages/CartPage';
 import PaymentPage from './pages/PaymentPage';
 import OrdersPage from './pages/OrdersPage';
 import AdminPage from './pages/AdminPage';
+import RestaurantPage from './pages/RestaurantPage';
+import RestaurantMenuPage from './pages/RestaurantMenuPage';
 import TestConnectionPage from './pages/TestConnectionPage';
 import './App.css';
 
@@ -28,6 +30,8 @@ function App() {
             <Route path="/payment" element={<PaymentPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/restaurant" element={<RestaurantPage />} />
+            <Route path="/restaurant/:restaurantId/menu" element={<RestaurantMenuPage />} />
             <Route path="/test-connection" element={<TestConnectionPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

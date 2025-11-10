@@ -24,6 +24,17 @@ repositories {
     mavenCentral()
 }
 
+// Chỉ định phiên bản Spring Cloud BOM - PHẢI ĐẶT TRƯỚC dependencies
+ext {
+    set('springCloudVersion', "2025.0.0")
+}
+
+// Import Spring Cloud BOM - PHẢI ĐẶT TRƯỚC dependencies
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -31,23 +42,15 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     compileOnly 'org.projectlombok:lombok'
-//    runtimeOnly 'com.h2database:h2'
     runtimeOnly 'com.mysql:mysql-connector-j:8.0.33'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-// Chỉ định phiên bản Spring Cloud BOM
-ext {
-    set('springCloudVersion', "2025.0.0") // Thay bằng phiên bản Spring Cloud tương thích với Spring Boot của bạn
-}
-
-// Import Spring Cloud BOM
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-    }
+// Chỉ định rõ main class để tránh lỗi
+springBoot {
+    mainClass = 'vn.cnpm.paymentservice.PaymentServiceApplication'
 }
 
 tasks.named('test') {

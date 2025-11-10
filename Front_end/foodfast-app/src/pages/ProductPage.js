@@ -150,17 +150,20 @@ function ProductDetailDialog({ product, isOpen, onClose, onAddToCart, onBuyNow }
 	);
 }
 
-function ProductCard({ product, onAddToCart, onBuyNow, onViewDetails }) {
+function ProductCard({ product, onAddToCart, onBuyNow, onViewDetails, onViewRestaurant }) {
 	return (
 		<Card className="overflow-hidden hover:shadow-lg transition-shadow group">
 			<div
 				className="relative h-48 overflow-hidden bg-gray-100 cursor-pointer"
-				onClick={() => onViewDetails(product)}
+				onClick={() => onViewRestaurant(product)}
 			>
 				<img
 					src={product.image}
 					alt={product.name}
 					className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+					onError={(e) => {
+						e.target.src = "https://via.placeholder.com/400x300?text=No+Image";
+					}}
 				/>
 				{product.isPopular && (
 					<Badge className="absolute top-2 left-2 bg-orange-600 hover:bg-orange-600">
@@ -179,11 +182,17 @@ function ProductCard({ product, onAddToCart, onBuyNow, onViewDetails }) {
 						</Badge>
 					)}
 				</div>
+				{/* Overlay với text khi hover */}
+				<div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
+					<span className="text-white font-semibold text-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+						View Restaurant Menu
+					</span>
+				</div>
 			</div>
 			<div className="p-4">
 				<h3
 					className="text-lg font-semibold mb-1 cursor-pointer hover:text-orange-600 transition-colors"
-					onClick={() => onViewDetails(product)}
+					onClick={() => onViewRestaurant(product)}
 				>
 					{product.name}
 				</h3>
@@ -205,7 +214,10 @@ function ProductCard({ product, onAddToCart, onBuyNow, onViewDetails }) {
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={() => onAddToCart(product)}
+							onClick={(e) => {
+								e.stopPropagation();
+								onAddToCart(product);
+							}}
 							className="hover:bg-orange-50 hover:text-orange-600"
 						>
 							<ShoppingCart className="w-4 h-4 mr-1" />
@@ -213,7 +225,10 @@ function ProductCard({ product, onAddToCart, onBuyNow, onViewDetails }) {
 						</Button>
 						<Button
 							size="sm"
-							onClick={() => onBuyNow(product)}
+							onClick={(e) => {
+								e.stopPropagation();
+								onBuyNow(product);
+							}}
 							className="bg-orange-600 hover:bg-orange-700"
 						>
 							Buy
@@ -230,7 +245,7 @@ export default function ProductPage() {
 	const { addToCart, getTotalItems } = useCart();
 	const [selectedCategory, setSelectedCategory] = useState("all");
 	const [selectedRestaurant, setSelectedRestaurant] = useState("all");
-	const [searchQuery, setSearchQuery] = useState("");
+		const [searchQuery, setSearchQuery] = useState("");
 	const [selectedProduct, setSelectedProduct] = useState(null);
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [user, setUser] = useState(null);
@@ -371,6 +386,15 @@ export default function ProductPage() {
 	const handleCloseDialog = () => {
 		setIsDialogOpen(false);
 		setSelectedProduct(null);
+	};
+
+	const handleViewRestaurant = (product) => {
+		// Kiểm tra xem sản phẩm có restaurantId không
+		if (product.restaurantId) {
+			navigate(`/restaurant/${product.restaurantId}/menu`);
+		} else {
+			toast.error('Restaurant information not available');
+		}
 	};
 
 	const handleLogout = () => {
@@ -610,6 +634,7 @@ export default function ProductPage() {
 								onAddToCart={handleAddToCart}
 								onBuyNow={handleBuyNow}
 								onViewDetails={handleViewDetails}
+								onViewRestaurant={handleViewRestaurant}
 							/>
 						))}
 					</div>

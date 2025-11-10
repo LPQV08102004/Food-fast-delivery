@@ -14,8 +14,10 @@ public class RestaurantResponse {
     private String name;
     private String address;
     private String phoneNumber;
+    private Long userId; // User ID với role RESTAURANT
+    private String description;
     private Double rating;
+    private Boolean isActive;
     private String deliveryTime;
     private Integer productCount;
 }
-

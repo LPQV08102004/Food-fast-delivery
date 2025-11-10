@@ -6,7 +6,8 @@
 - Maven 3.6+
 - Gradle 7.0+ (cho API Gateway)
 - MySQL Server đang chạy
-- Port 8080-8084 và 8761 available
+- **Docker Desktop (cho RabbitMQ)** ⭐ MỚI
+- Port 8080-8084, 8761, 5672, 15672 available
 
 ## Chuẩn bị Database
 
@@ -34,9 +35,53 @@ Các services đã cấu hình:
 
 Nếu MySQL của bạn khác, cập nhật file `application.properties` hoặc `application.yml` trong từng service.
 
+## ⭐ MỚI: Chuẩn bị RabbitMQ
+
+### Cách nhanh nhất: Sử dụng Script
+
+```cmd
+start-rabbitmq.bat
+```
+
+Script sẽ tự động:
+- ✅ Kiểm tra Docker
+- ✅ Tạo/Start RabbitMQ container  
+- ✅ Mở Management Console
+
+**RabbitMQ Management Console**: http://localhost:15672
+- Username: `guest`
+- Password: `guest`
+
+### Cách thủ công: Docker Command
+
+```cmd
+docker run -d --name rabbitmq ^
+  -p 5672:5672 ^
+  -p 15672:15672 ^
+  -e RABBITMQ_DEFAULT_USER=guest ^
+  -e RABBITMQ_DEFAULT_PASS=guest ^
+  rabbitmq:3-management
+```
+
+**Xem chi tiết**: `RABBITMQ_QUICK_START.md`
+
 ## Thứ tự khởi động Services
 
 **QUAN TRỌNG**: Phải khởi động theo thứ tự này!
+
+### 0. RabbitMQ (Message Queue) - PORT 5672, 15672 ⭐ MỚI
+
+```cmd
+# Chạy script
+start-rabbitmq.bat
+
+# Hoặc thủ công
+docker start rabbitmq
+```
+
+Kiểm tra: http://localhost:15672 (guest/guest)
+
+---
 
 ### 1. Eureka Service (Service Discovery) - PORT 8761
 
@@ -79,7 +124,7 @@ Endpoints:
 
 ---
 
-### 3. Product Service - PORT 8082
+### 3. Product Service - PORT 8082 ⭐ CÓ RABBITMQ
 
 ```powershell
 # Terminal 3
@@ -91,7 +136,11 @@ mvn spring-boot:run
 Đợi thấy:
 ```
 Started ProductServiceApplication on port 8082
+Connection to RabbitMQ established ✅
 ```
+
+**Chức năng mới**:
+- Listen order events để update inventory (sẵn sàng cho tương lai)
 
 Endpoints:
 - GET /api/products - Lấy tất cả products
@@ -102,7 +151,7 @@ Endpoints:
 
 ---
 
-### 4. Order Service - PORT 8083
+### 4. Order Service - PORT 8083 ⭐ CÓ RABBITMQ
 
 ```powershell
 # Terminal 4
@@ -114,10 +163,16 @@ mvn spring-boot:run
 Đợi thấy:
 ```
 Started OrderServiceApplication on port 8083
+Connection to RabbitMQ established ✅
 ```
 
+**Chức năng mới**:
+- ✅ Publish order events khi tạo order
+- ✅ Listen payment results để update order status
+- ✅ Async payment processing (không blocking)
+
 Endpoints:
-- POST /api/orders - Tạo order mới
+- POST /api/orders - Tạo order mới (ASYNC với RabbitMQ)
 - GET /api/orders - Lấy tất cả orders
 - GET /api/orders/{id} - Lấy order theo ID
 - GET /api/orders/my-orders - Orders của user hiện tại
@@ -125,7 +180,7 @@ Endpoints:
 
 ---
 
-### 5. Payment Service - PORT 8084
+### 5. Payment Service - PORT 8084 ⭐ CÓ RABBITMQ
 
 ```powershell
 # Terminal 5
@@ -137,10 +192,18 @@ mvn spring-boot:run
 Đợi thấy:
 ```
 Started PaymentServiceApplication on port 8084
+Connection to RabbitMQ established ✅
+Listening to payment.request.queue
 ```
 
+**Chức năng mới**:
+- ✅ Listen order events để xử lý payment
+- ✅ Publish payment results
+- ✅ Auto retry khi failed
+- ✅ 80% success rate (simulate real world)
+
 Endpoints:
-- POST /api/payments - Tạo payment
+- POST /api/payments - Tạo payment (vẫn có cho backward compatibility)
 - POST /api/payments/{id}/process - Xử lý payment
 - GET /api/payments/{id} - Lấy payment theo ID
 - GET /api/payments/order/{orderId} - Lấy payment theo order
@@ -200,203 +263,180 @@ Frontend URL: http://localhost:3000
 
 ---
 
-## Kiểm tra Services
+## ⭐ MỚI: Kiểm tra RabbitMQ Message Flow
 
-### 1. Eureka Dashboard
-Truy cập: http://localhost:8761
+### 1. Xem RabbitMQ Queues
 
-Bạn sẽ thấy tất cả services đã register:
-- USER-SERVICE
-- PRODUCT-SERVICE
-- ORDER-SERVICE
-- PAYMENT-SERVICE
-- API-GATEWAY
+Truy cập: http://localhost:15672 → Tab "Queues"
 
-### 2. Test API với Postman hoặc cURL
+Bạn sẽ thấy các queues:
+- ✅ `order.created.queue` - Orders đang đợi xử lý
+- ✅ `payment.request.queue` - Payment requests
+- ✅ `payment.processed.queue` - Payment results
+- ✅ `order.status.updated.queue` - Order status updates
 
-#### Register User
+### 2. Test Order với RabbitMQ
+
 ```bash
-curl -X POST http://localhost:8080/api/auth/register \
+# Tạo order
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "email": "test@example.com",
-    "password": "password123",
-    "phone": "0123456789"
-  }'
+  -d "{\"userId\":1,\"paymentMethod\":\"card\",\"items\":[{\"productId\":1,\"quantity\":2}],\"deliveryInfo\":{\"fullName\":\"Test User\",\"phone\":\"0123456789\",\"address\":\"123 Test\",\"city\":\"HCMC\"}}"
 ```
 
-#### Login
-```bash
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "password": "password123"
-  }'
+**Xem logs để thấy message flow**:
+
+**Order Service** sẽ log:
+```
+INFO: Creating order for user: 1
+INFO: Order created with ID: 1
+INFO: Publishing order created event
 ```
 
-Response:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "username": "testuser",
-    "email": "test@example.com",
-    "role": "USER"
-  }
-}
+**Payment Service** sẽ log:
+```
+INFO: Received order created event: Order ID 1
+INFO: Processing payment...
+INFO: Payment processed successfully
+INFO: Publishing payment result
 ```
 
-#### Get Products (No auth required)
-```bash
-curl http://localhost:8080/api/products
+**Order Service** sẽ log:
+```
+INFO: Received payment processed event
+INFO: Payment successful, updating order status
+INFO: Order CONFIRMED
 ```
 
-#### Get Profile (Auth required)
-```bash
-curl http://localhost:8080/api/users/profile \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+### 3. Giám sát trong RabbitMQ Console
+
+- **Exchanges**: Xem message routing
+- **Queues**: Xem messages waiting/processed
+- **Connections**: Xem services connected
+- **Channels**: Xem communication channels
+
+---
+
+## Ports Summary
+
+| Service | Port | URL | RabbitMQ |
+|---------|------|-----|----------|
+| Eureka Server | 8761 | http://localhost:8761 | ❌ |
+| User Service | 8081 | http://localhost:8081 | ❌ |
+| Product Service | 8082 | http://localhost:8082 | ✅ |
+| Order Service | 8083 | http://localhost:8083 | ✅ |
+| Payment Service | 8084 | http://localhost:8084 | ✅ |
+| API Gateway | 8080 | http://localhost:8080 | ❌ |
+| RabbitMQ AMQP | 5672 | - | - |
+| RabbitMQ Management | 15672 | http://localhost:15672 | - |
+| Frontend | 3000 | http://localhost:3000 | ❌ |
+
+---
+
+## Kiểm tra hệ thống
+
+### 1. Kiểm tra Services đã connect RabbitMQ
+
+Vào RabbitMQ Console → Connections:
 ```
+✅ order-service (2 channels)
+✅ payment-service (2 channels)
+✅ product-service (1 channel)
+```
+
+### 2. Kiểm tra Queues có messages không
+
+Vào RabbitMQ Console → Queues:
+- **Ready**: Messages đang chờ xử lý
+- **Unacked**: Messages đang được xử lý
+- **Total**: Tổng số messages
+
+### 3. Test Full Flow
+
+1. Tạo order qua API
+2. Xem logs của Order Service → Payment Service → Order Service
+3. Check RabbitMQ Console xem message flow
+4. Check order status đã update chưa
 
 ---
 
 ## Troubleshooting
 
-### Port already in use
-```powershell
-# Kiểm tra port đang dùng
-netstat -ano | findstr :8080
+### RabbitMQ connection failed
 
-# Kill process
-taskkill /PID <PID> /F
+**Lỗi**: `Connection refused: localhost:5672`
+
+**Giải pháp**:
+```cmd
+# Kiểm tra RabbitMQ
+docker ps | findstr rabbitmq
+
+# Nếu không chạy
+docker start rabbitmq
+
+# Xem logs
+docker logs rabbitmq
 ```
 
-### MySQL Connection Error
-```
-# Kiểm tra MySQL đang chạy
-Get-Service -Name MySQL*
+### Service không thể connect RabbitMQ
 
-# Start MySQL service
-Start-Service MySQL80
-
-# Kiểm tra kết nối
-mysql -u root -p
-```
-
-### Eureka không thấy services
-- Đợi 30 giây sau khi start service
-- Refresh Eureka dashboard (F5)
-- Kiểm tra log của service có lỗi không
-
-### Gradle không tìm thấy
-```powershell
-# Dùng gradlew (Gradle Wrapper)
-cd api-gateway
-./gradlew bootRun
-
-# Hoặc cài Gradle
-# Download từ https://gradle.org/releases/
-# Thêm vào PATH
+**Kiểm tra**:
+1. RabbitMQ đang chạy: http://localhost:15672
+2. Port 5672 available
+3. application.yml có config đúng:
+```yaml
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 ```
 
-### Maven build failed
-```powershell
-# Clean và rebuild
-mvn clean install -DskipTests
+### Messages không được consume
 
-# Update dependencies
-mvn clean install -U
-```
+1. Check service có đang chạy không
+2. Xem logs có error không
+3. Check RabbitMQ Console → Queues → "Ready" messages
+4. Check Consumers có active không
 
 ---
 
-## Scripts tự động (Optional)
+## Tài liệu tham khảo
 
-### Start All Services (PowerShell Script)
-
-Tạo file `start-all.ps1`:
-
-```powershell
-# Start Eureka
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\Study\CNPM\Food-fast-delivery\eureka-service; mvn spring-boot:run"
-
-# Đợi Eureka khởi động
-Start-Sleep -Seconds 30
-
-# Start User Service
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\Study\CNPM\Food-fast-delivery\user-service; mvn spring-boot:run"
-
-# Start Product Service
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\Study\CNPM\Food-fast-delivery\product-service; mvn spring-boot:run"
-
-# Start Order Service
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\Study\CNPM\Food-fast-delivery\order-service; mvn spring-boot:run"
-
-# Start Payment Service
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\Study\CNPM\Food-fast-delivery\payment-service; mvn spring-boot:run"
-
-# Đợi services khởi động
-Start-Sleep -Seconds 30
-
-# Start API Gateway
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\Study\CNPM\Food-fast-delivery\api-gateway; ./gradlew bootRun"
-
-# Start Frontend
-Start-Sleep -Seconds 20
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\Study\CNPM\Food-fast-delivery\Front_end\foodfast-app; npm start"
-
-Write-Host "All services started!"
-Write-Host "Eureka: http://localhost:8761"
-Write-Host "API Gateway: http://localhost:8080"
-Write-Host "Frontend: http://localhost:3000"
-```
-
-Chạy:
-```powershell
-.\start-all.ps1
-```
+- **RabbitMQ Quick Start**: `RABBITMQ_QUICK_START.md`
+- **RabbitMQ Integration Guide**: `RABBITMQ_INTEGRATION_GUIDE.md`
+- **Cart & Restaurant Logic**: `Front_end/foodfast-app/CART_RESTAURANT_LOGIC.md`
 
 ---
 
-## Monitoring
+## Tóm tắt Flow mới với RabbitMQ
 
-### 1. Logs
-Mỗi service sẽ in logs ra console. Chú ý:
-- `ERROR` - Lỗi nghiêm trọng
-- `WARN` - Cảnh báo
-- `INFO` - Thông tin bình thường
-
-### 2. Health Check
-```bash
-# User Service
-curl http://localhost:8081/actuator/health
-
-# Product Service
-curl http://localhost:8082/actuator/health
-
-# Order Service
-curl http://localhost:8083/actuator/health
-
-# Payment Service
-curl http://localhost:8084/actuator/health
+### TRƯỚC (Synchronous):
+```
+User → Order Service → Payment Service (REST) → Response
+              ↓ (blocking)
+          Wait...
 ```
 
-### 3. Eureka Dashboard
-http://localhost:8761 - Xem status tất cả services
+### SAU (Asynchronous với RabbitMQ):
+```
+User → Order Service → RabbitMQ → Payment Service
+         ↓ (immediate)              ↓
+    Response ngay               Process async
+         ↓                           ↓
+    Order saved              Publish result
+                                    ↓
+                            Order status updated
+```
+
+**Lợi ích**:
+- ✅ Non-blocking - User không phải đợi
+- ✅ Loose coupling - Services độc lập
+- ✅ Auto retry - RabbitMQ tự động retry 3 lần
+- ✅ Resilient - Payment down không ảnh hưởng order creation
+- ✅ Scalable - Scale từng service độc lập
 
 ---
 
-## Next Steps
-
-1. ✅ Start all backend services
-2. ✅ Verify Eureka Dashboard
-3. ✅ Test APIs with Postman
-4. ✅ Start Frontend
-5. ✅ Test full user flow:
-   - Register → Login → Browse Products → Add to Cart → Checkout → Payment
-6. ✅ Test Admin features:
-   - Login as admin → Manage users/orders/products/restaurants
-
-Chúc may mắn! 🚀
+🚀 **Hệ thống đã sẵn sàng với Event-Driven Architecture!**
