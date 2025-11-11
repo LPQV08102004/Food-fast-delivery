@@ -147,8 +147,8 @@ export default function OrdersPage() {
       setLoading(true);
       setError(null);
 
-      // Get all orders (you can change this to getMyOrders for user-specific orders)
-      const data = await orderService.getAllOrders();
+      // Get only current user's orders
+      const data = await orderService.getMyOrders();
 
       // Sort by newest first
       const sortedOrders = data.sort((a, b) =>

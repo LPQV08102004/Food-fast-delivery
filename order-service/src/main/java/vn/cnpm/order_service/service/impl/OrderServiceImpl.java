@@ -119,6 +119,14 @@ public class OrderServiceImpl implements OrderService {
         return mapToDto(o);
     }
 
+    @Override
+    public List<OrderResponse> getOrdersByUserId(Long userId) {
+        return orderRepository.findByUserId(userId)
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
     private OrderResponse mapToDto(Order o) {
         return OrderResponse.builder()
                 .id(o.getId())
