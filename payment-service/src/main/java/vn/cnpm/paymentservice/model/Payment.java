@@ -21,6 +21,9 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+
     @Column(unique = true)
     private String idempotencyKey;
 

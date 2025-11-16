@@ -35,38 +35,55 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
                             .parseClaimsJws(token)
                             .getBody();
 
-                    // Extract userId from token
+                    // Extract userId from token - try multiple claim names
+                    String userId = null;
+
+                    // Try "userId" first
                     Object userIdObj = claims.get("userId");
-                    final String userId; // Make it final
+                    if (userIdObj == null) {
+                        // Try "id" as fallback
+                        userIdObj = claims.get("id");
+                    }
+                    if (userIdObj == null) {
+                        // Try "sub" (subject) as fallback
+                        userIdObj = claims.getSubject();
+                    }
 
                     if (userIdObj instanceof Integer) {
-                        userId = String.valueOf((Integer) userIdObj);
+                        userId = String.valueOf(userIdObj);
                     } else if (userIdObj instanceof Long) {
-                        userId = String.valueOf((Long) userIdObj);
+                        userId = String.valueOf(userIdObj);
                     } else if (userIdObj != null) {
                         userId = userIdObj.toString();
-                    } else {
-                        userId = null;
                     }
 
                     if (userId != null) {
+
+                        // FIX: Tạo một biến "effectively final" mới
+                        final String finalUserId = userId;
+
                         // Add X-User-Id header to request
                         ServerWebExchange modifiedExchange = exchange.mutate()
-                                .request(r -> r.header("X-User-Id", userId))
+                                .request(r -> r.header("X-User-Id", finalUserId)) // <-- Dùng biến mới
                                 .build();
 
-                        System.out.println("JWT Filter: Added X-User-Id header: " + userId);
+                        // (Khuyên dùng) Cập nhật log để dùng biến mới cho nhất quán
+                        System.out.println("[JWT Filter] Added X-User-Id header: " + finalUserId);
                         return chain.filter(modifiedExchange);
                     } else {
-                        System.err.println("JWT Filter: userId not found in token claims");
+                        System.err.println("[JWT Filter ERROR] userId not found in token claims. Available claims: " + claims.keySet());
                     }
+                } catch (io.jsonwebtoken.ExpiredJwtException e) {
+                    System.err.println("[JWT Filter ERROR] Token expired: " + e.getMessage());
+                } catch (io.jsonwebtoken.MalformedJwtException e) {
+                    System.err.println("[JWT Filter ERROR] Malformed token: " + e.getMessage());
+                } catch (io.jsonwebtoken.security.SignatureException e) {
+                    System.err.println("[JWT Filter ERROR] Invalid signature: " + e.getMessage());
                 } catch (Exception e) {
-                    // Token invalid or expired - log but continue
-                    System.err.println("JWT validation failed: " + e.getMessage());
-                    e.printStackTrace();
+                    System.err.println("[JWT Filter ERROR] Token validation failed: " + e.getMessage());
                 }
             } else {
-                System.err.println("JWT Filter: No Authorization header or invalid format");
+                System.err.println("[JWT Filter WARNING] No Authorization header or invalid format");
             }
 
             // No token or invalid format, continue without adding header

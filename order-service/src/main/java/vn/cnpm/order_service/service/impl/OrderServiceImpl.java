@@ -1,14 +1,16 @@
 package vn.cnpm.order_service.service.impl;
 
 import vn.cnpm.order_service.DTO.*;
-import vn.cnpm.order_service.client.PaymentClient;
 import vn.cnpm.order_service.client.ProductClient;
+import vn.cnpm.order_service.event.OrderCreatedEvent;
+import vn.cnpm.order_service.messaging.OrderEventPublisher;
 import vn.cnpm.order_service.model.Order;
 import vn.cnpm.order_service.model.OrderItem;
 import vn.cnpm.order_service.model.OrderStatus;
 import vn.cnpm.order_service.repository.OrderRepository;
 import vn.cnpm.order_service.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
@@ -17,14 +19,17 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
-    private final PaymentClient paymentClient;
     private final ProductClient productClient;
+    private final OrderEventPublisher orderEventPublisher;
 
     @Override
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
+        log.info("Creating order for userId: {}", request.getUserId());
+
         // Tạo order trước (không có items)
         Order order = Order.builder()
                 .userId(request.getUserId())
@@ -71,33 +76,25 @@ public class OrderServiceImpl implements OrderService {
 
         // Lưu order vào database (cascade sẽ tự động lưu items)
         Order saved = orderRepository.save(order);
+        log.info("Order created with id: {}", saved.getId());
 
-        // Gọi payment service để xử lý thanh toán
+        // Publish OrderCreatedEvent to RabbitMQ for async payment processing
         try {
-            PaymentDTO paymentRequest = PaymentDTO.builder()
+            OrderCreatedEvent event = OrderCreatedEvent.builder()
                     .orderId(saved.getId())
-                    .amount(saved.getTotalPrice())
+                    .userId(saved.getUserId())
+                    .totalPrice(saved.getTotalPrice())
                     .paymentMethod(saved.getPaymentMethod())
+                    .deliveryAddress(saved.getDeliveryAddress())
                     .build();
 
-            PaymentDTO paymentResponse = paymentClient.createPayment(paymentRequest);
+            orderEventPublisher.publishOrderCreatedEvent(event);
+            log.info("OrderCreatedEvent published for orderId: {}", saved.getId());
 
-            // Cập nhật payment status
-            saved.setPaymentStatus(paymentResponse.getStatus());
-
-            // Nếu thanh toán thành công, cập nhật order status
-            if ("SUCCESS".equals(paymentResponse.getStatus())) {
-                saved.setStatus(OrderStatus.CONFIRMED);
-            } else {
-                saved.setStatus(OrderStatus.CANCELLED);
-            }
-
-            saved = orderRepository.save(saved);
         } catch (Exception e) {
-            // Nếu payment service fail, vẫn giữ order nhưng đánh dấu payment failed
-            saved.setPaymentStatus("FAILED");
-            saved.setStatus(OrderStatus.CANCELLED);
-            saved = orderRepository.save(saved);
+            log.error("Failed to publish OrderCreatedEvent for orderId: {}", saved.getId(), e);
+            // Order is still saved, but payment will not be processed
+            // You might want to implement a retry mechanism or manual intervention
         }
 
         // Map sang response

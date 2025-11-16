@@ -44,6 +44,12 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<!-- RabbitMQ for Async Messaging -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-amqp</artifactId>
+		</dependency>
+
 		<!-- MySQL Driver - Thêm version cụ thể -->
 		<dependency>
 			<groupId>com.mysql</groupId>

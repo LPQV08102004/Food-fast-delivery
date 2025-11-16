@@ -1,0 +1,45 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-service
+  profiles:
+    active: native  # Use native file system (or 'git' for Git repository)
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/config
+        # Uncomment below for Git-based configuration
+        # git:
+        #   uri: https://github.com/your-org/food-delivery-config
+        #   default-label: main
+        #   clone-on-start: true
+        #   username: ${GIT_USERNAME}
+        #   password: ${GIT_PASSWORD}
+
+# Eureka Configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,refresh
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true

@@ -1,0 +1,65 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Eureka Service Discovery
+  - job_name: 'eureka-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['eureka-service:8761']
+        labels:
+          application: 'eureka-service'
+
+  # Config Service
+  - job_name: 'config-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['config-service:8888']
+        labels:
+          application: 'config-service'
+
+  # API Gateway
+  - job_name: 'api-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['api-gateway:8080']
+        labels:
+          application: 'api-gateway'
+
+  # User Service
+  - job_name: 'user-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['user-service:8081']
+        labels:
+          application: 'user-service'
+
+  # Product Service
+  - job_name: 'product-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['product-service:8082']
+        labels:
+          application: 'product-service'
+
+  # Order Service
+  - job_name: 'order-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['order-service:8083']
+        labels:
+          application: 'order-service'
+
+  # Payment Service
+  - job_name: 'payment-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['payment-service:8084']
+        labels:
+          application: 'payment-service'

@@ -158,8 +158,29 @@ export default function OrdersPage() {
       setOrders(sortedOrders);
     } catch (err) {
       console.error('Error fetching orders:', err);
-      setError('Failed to load orders. Please try again.');
-      toast.error('Failed to load orders');
+
+      // Xử lý lỗi cụ thể hơn
+      let errorMessage = 'Failed to load orders. Please try again.';
+
+      if (err.response) {
+        // Server trả về response với error
+        if (err.response.status === 400) {
+          errorMessage = 'Invalid request. Please try logging in again.';
+        } else if (err.response.status === 401) {
+          errorMessage = 'Your session has expired. Please login again.';
+          setTimeout(() => navigate('/login'), 2000);
+        } else if (err.response.status === 404) {
+          errorMessage = 'Orders service is not available.';
+        } else if (err.response.status >= 500) {
+          errorMessage = 'Server error. Our team has been notified.';
+        }
+      } else if (err.request) {
+        // Request được gửi nhưng không nhận được response
+        errorMessage = 'Cannot connect to server. Please check your internet connection.';
+      }
+
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,11 @@ server:
   port: 8084
 
 spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin123
   datasource:
     url: jdbc:mysql://localhost:3306/payment_service
     username: root
@@ -19,4 +24,44 @@ spring:
       ddl-auto: update
     show-sql: true
 
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+  ratelimiter:
+    instances:
+      paymentApi:
+        limitForPeriod: 50
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0s
 
+# Spring Boot Actuator & Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,ratelimiters
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans

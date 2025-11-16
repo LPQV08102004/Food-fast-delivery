@@ -1,6 +1,13 @@
 server:
   port: 8083
 
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin123
+
 #spring:
 #  datasource:
 #    url: jdbc:h2:mem:orderdb
@@ -22,3 +29,70 @@ server:
 #        defaultZone: http://localhost:8761/eureka/
 #    instance:
 #      preferIpAddress: true
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentService:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.util.concurrent.TimeoutException
+          - java.io.IOException
+      productService:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+      userService:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+  retry:
+    instances:
+      paymentService:
+        maxAttempts: 3
+        waitDuration: 1000
+        retryExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.util.concurrent.TimeoutException
+      productService:
+        maxAttempts: 3
+        waitDuration: 1000
+      userService:
+        maxAttempts: 2
+        waitDuration: 500
+  timelimiter:
+    instances:
+      paymentService:
+        timeoutDuration: 5s
+      productService:
+        timeoutDuration: 3s
+      userService:
+        timeoutDuration: 3s
+
+# Spring Boot Actuator & Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
