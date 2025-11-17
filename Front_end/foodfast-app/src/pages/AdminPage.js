@@ -22,6 +22,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 
@@ -406,6 +407,22 @@ function UserScreen() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editUserId, setEditUserId] = useState(null);
+  const [editUsername, setEditUsername] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editRole, setEditRole] = useState('USER');
+  const [editStatus, setEditStatus] = useState('Active');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Add user form states
+  const [newUsername, setNewUsername] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newRole, setNewRole] = useState('USER');
+  const [newStatus, setNewStatus] = useState('Active');
 
   useEffect(() => {
     fetchUsers();
@@ -451,6 +468,87 @@ function UserScreen() {
     }
   };
 
+  const handleEditUser = (user) => {
+    setEditUserId(user.id);
+    setEditUsername(user.username);
+    setEditEmail(user.email);
+    setEditPhone(user.phone || '');
+    setEditRole(user.role || 'USER');
+    setEditStatus(user.status);
+    setDialogOpen(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editUsername || !editEmail) {
+      toast.error('Username and email are required');
+      return;
+    }
+
+    try {
+      await adminService.updateUser(editUserId, {
+        username: editUsername,
+        email: editEmail,
+        phone: editPhone,
+        role: editRole,
+        status: editStatus,
+      });
+      toast.success('User updated successfully');
+      setDialogOpen(false);
+      fetchUsers(); // Refresh list
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error('Failed to update user');
+    }
+  };
+
+  const handleAddUser = () => {
+    // Reset form
+    setNewUsername('');
+    setNewEmail('');
+    setNewPassword('');
+    setNewPhone('');
+    setNewRole('USER');
+    setNewStatus('Active');
+    setAddDialogOpen(true);
+  };
+
+  const handleCreateUser = async () => {
+    if (!newUsername || !newEmail || !newPassword) {
+      toast.error('Username, email and password are required');
+      return;
+    }
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    // Validate password length
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      await adminService.createUser({
+        username: newUsername,
+        email: newEmail,
+        password: newPassword,
+        phone: newPhone,
+        role: newRole,
+        status: newStatus,
+      });
+      toast.success('User created successfully');
+      setAddDialogOpen(false);
+      fetchUsers(); // Refresh list
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error(error.message || 'Failed to create user');
+    }
+  };
+
   const filteredUsers = users.filter(user =>
     user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -470,7 +568,7 @@ function UserScreen() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleAddUser}>
             <Plus className="w-4 h-4 mr-2" />
             Add user
           </Button>
@@ -490,6 +588,7 @@ function UserScreen() {
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead>State</TableHead>
                 <TableHead>Edit</TableHead>
                 <TableHead>Delete</TableHead>
@@ -506,6 +605,17 @@ function UserScreen() {
                     <TableCell>
                       <Badge
                         className={
+                          user.role === 'ADMIN'
+                            ? 'bg-purple-100 text-purple-700 hover:bg-purple-100'
+                            : 'bg-blue-100 text-blue-700 hover:bg-blue-100'
+                        }
+                      >
+                        {user.role || 'USER'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
                           user.status === 'Active'
                             ? 'bg-green-100 text-green-700 hover:bg-green-100'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-100'
@@ -517,7 +627,7 @@ function UserScreen() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleEditUser(user)}>
                         <Edit className="w-4 h-4 text-blue-600" />
                       </Button>
                     </TableCell>
@@ -534,7 +644,7 @@ function UserScreen() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-500">
+                  <TableCell colSpan={8} className="text-center text-gray-500">
                     No users found
                   </TableCell>
                 </TableRow>
@@ -543,6 +653,181 @@ function UserScreen() {
           </Table>
         </div>
       )}
+
+      {/* Add User Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Username <span className="text-red-500">*</span>
+              </label>
+              <Input
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                placeholder="Enter username"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="Enter email"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter password (min 6 characters)"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone
+              </label>
+              <Input
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+                placeholder="Enter phone number"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Role
+              </label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="USER">USER</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleCreateUser}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Create User
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setAddDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Username
+              </label>
+              <Input
+                value={editUsername}
+                onChange={(e) => setEditUsername(e.target.value)}
+                placeholder="Enter username"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <Input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="Enter email"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone
+              </label>
+              <Input
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                placeholder="Enter phone number"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Role
+              </label>
+              <select
+                value={editRole}
+                onChange={(e) => setEditRole(e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="USER">USER</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <select
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleUpdateUser}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Update User
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

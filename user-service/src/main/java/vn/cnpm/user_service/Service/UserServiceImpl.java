@@ -1,10 +1,11 @@
 package vn.cnpm.user_service.Service;
 
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import vn.cnpm.user_service.Repository.UserRepository;
+import vn.cnpm.user_service.Repository.roleRepository;
+import vn.cnpm.user_service.models.Role;
 import vn.cnpm.user_service.models.User;
 import vn.cnpm.user_service.DTO.UserDTO;
 import vn.cnpm.user_service.config.JwtUtils;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final roleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
 
@@ -79,6 +81,13 @@ public class UserServiceImpl implements UserService {
         }
         if (userDTO.getStatus() != null) {
             user.setStatus(userDTO.getStatus());
+        }
+        if (userDTO.getRole() != null) {
+            // Giả sử bạn có một phương thức để lấy Role theo tên
+
+            Role role = roleRepository.findByName(userDTO.getRole())
+                    .orElseThrow(() -> new RuntimeException("Role not found"));
+            user.setRole(role);
         }
 
         userRepository.save(user);
