@@ -9,4 +9,6 @@ public class ProductRequest {
     private Double price;
     private int stock;
     private Long categoryId;
+    private Long restaurantId;
+    private Boolean isActive;
 }

@@ -20,9 +20,11 @@ const adminService = {
         new Date(order.createdAt).toDateString() === today
       ).length;
 
-      const totalRevenue = orders.data.reduce((sum, order) =>
-        sum + (order.totalAmount || 0), 0
-      );
+      const totalRevenue = orders.data.reduce((sum, order) => {
+        // Try totalPrice first (from backend), then fallback to totalAmount
+        const amount = order.totalPrice || order.totalAmount || 0;
+        return sum + amount;
+      }, 0);
 
       return {
         totalOrders: orders.data.length,
@@ -54,8 +56,10 @@ const adminService = {
           const date = new Date(order.createdAt);
           if (date.getFullYear() === (year || new Date().getFullYear())) {
             const month = date.getMonth();
-            monthlyData[month].revenue += order.totalAmount || 0;
-            monthlyData[month].expenses += (order.totalAmount || 0) * 0.6; // Giả sử 60% là chi phí
+            // Try totalPrice first (from backend), then fallback to totalAmount
+            const amount = order.totalPrice || order.totalAmount || 0;
+            monthlyData[month].revenue += amount;
+            monthlyData[month].expenses += amount * 0.6; // Giả sử 60% là chi phí
           }
         }
       });

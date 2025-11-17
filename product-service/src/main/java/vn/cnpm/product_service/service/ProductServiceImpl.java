@@ -7,8 +7,10 @@ import vn.cnpm.product_service.dto.ProductResponse;
 import vn.cnpm.product_service.models.Category;
 import vn.cnpm.product_service.models.Product;
 import vn.cnpm.product_service.models.Product_image;
+import vn.cnpm.product_service.models.Restaurant;
 import vn.cnpm.product_service.repository.CategoryRepository;
 import vn.cnpm.product_service.repository.ProductRepository;
+import vn.cnpm.product_service.repository.RestaurantRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,16 +19,27 @@ import java.util.stream.Collectors;
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final RestaurantRepository restaurantRepository;
+
     @Override
     public ProductResponse createProduct(ProductRequest request) {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
+
+        Restaurant restaurant = null;
+        if (request.getRestaurantId() != null) {
+            restaurant = restaurantRepository.findById(request.getRestaurantId())
+                    .orElseThrow(() -> new RuntimeException("Restaurant not found"));
+        }
+
         Product product = Product.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .price(request.getPrice())
                 .stock(request.getStock())
                 .category(category)
+                .restaurant(restaurant)
+                .isActive(request.getIsActive() != null ? request.getIsActive() : true)
                 .build();
         productRepository.save(product);
         return mapToResponse(product);
@@ -63,11 +76,22 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
+
+        Restaurant restaurant = null;
+        if (request.getRestaurantId() != null) {
+            restaurant = restaurantRepository.findById(request.getRestaurantId())
+                    .orElseThrow(() -> new RuntimeException("Restaurant not found"));
+        }
+
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         product.setStock(request.getStock());
         product.setCategory(category);
+        product.setRestaurant(restaurant);
+        if (request.getIsActive() != null) {
+            product.setIsActive(request.getIsActive());
+        }
         productRepository.save(product);
         return mapToResponse(product);
     }
