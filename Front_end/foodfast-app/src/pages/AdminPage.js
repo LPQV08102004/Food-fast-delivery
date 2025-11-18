@@ -505,7 +505,7 @@ function UserScreen() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
+                )))
               : (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-gray-500">
@@ -517,7 +517,7 @@ function UserScreen() {
           </Table>
         </div>
       )}
-
+    
       {/* Add User Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent>
