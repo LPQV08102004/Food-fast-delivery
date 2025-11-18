@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-
-const API_BASE_URL = 'http://localhost:8080/api';
+// Sử dụng biến môi trường để có thể thay đổi API URL khi chạy trên LAN
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 
 // Tạo axios instance
 const api = axios.create({

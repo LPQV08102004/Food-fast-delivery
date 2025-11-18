@@ -1,16 +1,22 @@
-FROM gradle:7.6-jdk17-alpine as build
+FROM gradle:8.5-jdk17-alpine as build
 WORKDIR /workspace/app
 
-COPY build.gradle settings.gradle gradlew ./
+COPY build.gradle settings.gradle ./
 COPY gradle gradle
-COPY src src
+COPY gradlew ./
 
 RUN chmod +x ./gradlew
-RUN ./gradlew build -x test
+
+# Download dependencies trước để tận dụng Docker cache
+RUN ./gradlew dependencies --no-daemon || true
+
+COPY src src
+
+# Build application
+RUN ./gradlew build -x test --no-daemon
 
 FROM eclipse-temurin:17-jre-alpine
 VOLUME /tmp
 ARG JAR_FILE=/workspace/app/build/libs/*.jar
 COPY --from=build ${JAR_FILE} app.jar
 ENTRYPOINT ["java","-jar","/app.jar"]
-

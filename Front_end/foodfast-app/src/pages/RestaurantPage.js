@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { RestaurantSidebar } from '../components/restaurant/RestaurantSidebar';
 import { RestaurantHeader } from '../components/restaurant/RestaurantHeader';
@@ -7,12 +7,25 @@ import { ProductScreen } from '../components/restaurant/ProductScreen';
 import { OrderScreen } from '../components/restaurant/OrderScreen';
 import { RevenueScreen } from '../components/restaurant/RevenueScreen';
 import { SettingScreen } from '../components/restaurant/SettingScreen';
+import authService from '../services/authService';
 
 function RestaurantPage() {
   const [activeScreen, setActiveScreen] = useState('profile');
   
-  // TODO: Get restaurantId from logged-in user or context
-  const restaurantId = 1;
+  // Lấy restaurantId từ user đã đăng nhập
+  const user = authService.getCurrentUser();
+  const restaurantId = user?.restaurantId || user?.id || 1; // Fallback về 1 nếu không có
+
+  // Log để debug
+  useEffect(() => {
+    console.log('Current user:', user);
+    console.log('Restaurant ID:', restaurantId);
+
+    // Kiểm tra quyền truy cập
+    if (!authService.isRestaurant() && !authService.isAdmin()) {
+      console.warn('User không có quyền truy cập restaurant dashboard');
+    }
+  }, [user, restaurantId]);
 
   const renderScreen = () => {
     switch (activeScreen) {

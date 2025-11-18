@@ -112,6 +112,9 @@ services:
   mysql:
     image: mysql:8.0
     container_name: mysql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --bind-address=0.0.0.0
     environment:
       - MYSQL_ROOT_PASSWORD=08102004
       - MYSQL_DATABASE=food_delivery
@@ -123,7 +126,7 @@ services:
       - microservices-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 20s
       retries: 10
 
@@ -294,10 +297,15 @@ services:
 
   # Frontend
   frontend:
-    build: ./Front_end/foodfast-app
+    build:
+      context: ./Front_end/foodfast-app
+      args:
+        - REACT_APP_API_BASE_URL=${API_BASE_URL:-http://localhost:8080/api}
     container_name: frontend
     ports:
       - "3000:80"
+    environment:
+      - REACT_APP_API_BASE_URL=${API_BASE_URL:-http://localhost:8080/api}
     depends_on:
       - api-gateway
     networks:

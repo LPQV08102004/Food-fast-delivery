@@ -32,10 +32,16 @@ export default function LoginPage() {
 
       console.log('Login successful:', response);
 
-      // Check role và redirect phù hợp
-      if (authService.isAdmin()) {
+      // Lấy role từ response hoặc user object
+      const userRole = response.user?.role || authService.getUserRole();
+
+      // Redirect theo role
+      if (userRole === 'ADMIN') {
         // Admin → Admin Dashboard
         navigate('/admin');
+      } else if (userRole === 'RESTAURANT' || userRole === 'RESTAURANT_OWNER') {
+        // Restaurant Owner → Restaurant Dashboard
+        navigate('/restaurant');
       } else {
         // User thường → Products Page
         navigate('/products');

@@ -71,6 +71,18 @@ const authService = {
     return user?.role === 'ADMIN';
   },
 
+  // Kiểm tra user có phải restaurant owner không
+  isRestaurant: () => {
+    const user = authService.getCurrentUser();
+    return user?.role === 'RESTAURANT' || user?.role === 'RESTAURANT_OWNER';
+  },
+
+  // Lấy restaurantId từ user hiện tại
+  getRestaurantId: () => {
+    const user = authService.getCurrentUser();
+    return user?.restaurantId || null;
+  },
+
   // Kiểm tra role của user
   getUserRole: () => {
     const user = authService.getCurrentUser();
