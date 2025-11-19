@@ -1,5 +1,7 @@
 server:
   port: 8080
+  address: 0.0.0.0
+
 
 spring:
   application:
@@ -13,8 +15,7 @@ spring:
               - "http://localhost:*"
               - "http://127.0.0.1:*"
               - "http://192.168.*.*:*"
-              - "http://10.*.*.*:*"
-              - "http://172.16.*.*:*"
+              - "http://26.174.141.*:*"
             allowedMethods:
               - GET
               - POST
@@ -32,7 +33,9 @@ spring:
           predicates:
             - Path=/api/auth/**
           filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
 
         # Route cho user management
         - id: user-service-users
@@ -40,35 +43,40 @@ spring:
           predicates:
             - Path=/api/users/**
           filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
         - id: product-service
           uri: lb://PRODUCT-SERVICE
           predicates:
             - Path=/api/products/**
           filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
         - id: category-service
           uri: lb://PRODUCT-SERVICE
           predicates:
             - Path=/api/categories/**
           filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
         - id: restaurant-service
           uri: lb://PRODUCT-SERVICE
           predicates:
             - Path=/api/restaurants/**
           filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
         - id: order-service
           uri: lb://ORDER-SERVICE
           predicates:
             - Path=/api/orders/**
           filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Credentials, RETAIN_UNIQUE
             - JwtAuthenticationFilter
 
         - id: payment-service
@@ -76,7 +84,8 @@ spring:
           predicates:
             - Path=/api/payments/**
           filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Credentials, RETAIN_UNIQUE
       discovery:
         locator:
           enabled: true
@@ -89,5 +98,5 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
   instance:
-    prefer-ip-address: false
+    prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
