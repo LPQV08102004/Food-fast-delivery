@@ -4,53 +4,101 @@ import vn.cnpm.paymentservice.DTO.PaymentRequest;
 import vn.cnpm.paymentservice.DTO.PaymentResponse;
 import vn.cnpm.paymentservice.exception.PaymentException;
 import vn.cnpm.paymentservice.model.Payment;
+import vn.cnpm.paymentservice.model.PaymentMethod;
 import vn.cnpm.paymentservice.model.PaymentStatus;
 import vn.cnpm.paymentservice.repository.PaymentRepository;
+import vn.cnpm.paymentservice.service.MoMoService;
 import vn.cnpm.paymentservice.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository repository;
-    private final Random random = new Random();
+    private final MoMoService momoService;
 
     @Override
     @Transactional
     public PaymentResponse process(PaymentRequest req, String idempotencyKey) {
+        // Check for idempotency
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             Optional<Payment> existing = repository.findByIdempotencyKey(idempotencyKey);
             if (existing.isPresent()) {
+                log.info("Returning existing payment for idempotency key: {}", idempotencyKey);
                 return mapToResponse(existing.get());
             }
         }
 
+        // Check if order already paid
         repository.findByOrderId(req.getOrderId()).ifPresent(p -> {
             if (p.getStatus() == PaymentStatus.SUCCESS) {
                 throw new PaymentException("Order already paid: " + req.getOrderId());
             }
         });
 
-        Payment p = Payment.builder()
+        // Determine payment method
+        PaymentMethod method = PaymentMethod.MOMO; // Default to MoMo
+        if (req.getPaymentMethod() != null) {
+            try {
+                method = PaymentMethod.valueOf(req.getPaymentMethod().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid payment method: {}, defaulting to MOMO", req.getPaymentMethod());
+            }
+        }
+
+        Payment payment = Payment.builder()
                 .orderId(req.getOrderId())
                 .amount(req.getAmount())
-                .status(PaymentStatus.FAILED)
+                .status(PaymentStatus.PENDING)
+                .paymentMethod(method)
                 .idempotencyKey(idempotencyKey)
                 .attemptCount(1)
                 .build();
 
-        boolean success = random.nextInt(100) < 80;
-        p.setStatus(success ? PaymentStatus.SUCCESS : PaymentStatus.FAILED);
+        // Process based on payment method
+        if (method == PaymentMethod.MOMO) {
+            try {
+                String orderInfo = "Thanh toán đơn hàng #" + req.getOrderId();
+                com.mservice.models.PaymentResponse momoResponse = momoService.createPayment(
+                        req.getOrderId(),
+                        req.getAmount(),
+                        orderInfo
+                );
 
-        Payment saved = repository.save(p);
+                if (momoResponse != null && momoResponse.getResultCode() == 0) {
+                    payment.setMomoRequestId(momoResponse.getRequestId());
+                    payment.setMomoOrderId(momoResponse.getOrderId());
+                    payment.setMomoPayUrl(momoResponse.getPayUrl());
+                    payment.setMomoResultCode(momoResponse.getResultCode());
+                    payment.setMomoMessage(momoResponse.getMessage());
+                    payment.setStatus(PaymentStatus.PENDING);
+                    log.info("MoMo payment initiated successfully for order {}", req.getOrderId());
+                } else {
+                    payment.setStatus(PaymentStatus.FAILED);
+                    payment.setMomoResultCode(momoResponse != null ? momoResponse.getResultCode() : -1);
+                    payment.setMomoMessage(momoResponse != null ? momoResponse.getMessage() : "MoMo API error");
+                    log.error("MoMo payment failed for order {}: {}", req.getOrderId(),
+                            momoResponse != null ? momoResponse.getMessage() : "Unknown error");
+                }
+            } catch (Exception e) {
+                payment.setStatus(PaymentStatus.FAILED);
+                payment.setMomoMessage("Exception: " + e.getMessage());
+                log.error("Exception creating MoMo payment for order {}", req.getOrderId(), e);
+            }
+        } else {
+            // Other payment methods - simulate success/failure
+            payment.setStatus(PaymentStatus.SUCCESS);
+            log.info("Payment processed with method: {}", method);
+        }
 
-
+        Payment saved = repository.save(payment);
         return mapToResponse(saved);
     }
 
@@ -68,6 +116,11 @@ public class PaymentServiceImpl implements PaymentService {
                 .idempotencyKey(p.getIdempotencyKey())
                 .createdAt(p.getCreatedAt())
                 .updatedAt(p.getUpdatedAt())
+                .momoPayUrl(p.getMomoPayUrl())
+                .momoRequestId(p.getMomoRequestId())
+                .momoOrderId(p.getMomoOrderId())
+                .momoResultCode(p.getMomoResultCode())
+                .momoMessage(p.getMomoMessage())
                 .build();
     }
 }

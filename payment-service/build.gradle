@@ -22,6 +22,9 @@ configurations {
 
 repositories {
     mavenCentral()
+    flatDir {
+        dirs '../javapayment/target'
+    }
 }
 
 // Chỉ định phiên bản Spring Cloud BOM - PHẢI ĐẶT TRƯỚC dependencies
@@ -59,6 +62,13 @@ dependencies {
     // Centralized Logging
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
     
+    // MoMo Payment Gateway Integration
+    implementation files('../javapayment/target/momopayment-1.0.jar')
+
+    // Dependencies required by MoMo SDK
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j:8.0.33'
     annotationProcessor 'org.projectlombok:lombok'

@@ -7,6 +7,7 @@ public enum PaymentMethod {
     CARD,
     WALLET,
     CASH,
+    MOMO,
     OTHER;
 
     public static PaymentMethod fromString(String s) {
@@ -18,4 +19,3 @@ public enum PaymentMethod {
         }
     }
 }
-

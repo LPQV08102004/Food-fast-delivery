@@ -1,16 +1,85 @@
 server:
   port: 8084
+  address: 0.0.0.0
 
 spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin123
   datasource:
-    url: jdbc:h2:mem:paymentdb
-    driverClassName: org.h2.Driver
-    username: sa
-    password:
-  h2:
-    console:
-      enabled: true
+    url: jdbc:mysql://localhost:3306/payment_service
+    username: root
+    password: 08102004
+    driver-class-name: com.mysql.cj.jdbc.Driver
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#  h2:
+#    console:
+#      enabled: true
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+# MoMo Payment Configuration
+momo:
+  environment: dev  # dev or prod
+  dev:
+    endpoint: https://test-payment.momo.vn/v2/gateway/api
+    partner-code: MOMOLRJZ20181206
+    access-key: mTCKt9W3eU1m39TW
+    secret-key: SetA5RDnLHvt51AULf51DyauxUo3kDU6
+  prod:
+    endpoint: https://payment.momo.vn/v2/gateway/api
+    partner-code: YOUR_PROD_PARTNER_CODE
+    access-key: YOUR_PROD_ACCESS_KEY
+    secret-key: YOUR_PROD_SECRET_KEY
+  urls:
+    return-url: http://localhost:3000/payment/result
+    notify-url: http://localhost:8080/api/payments/momo/callback
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+  ratelimiter:
+    instances:
+      paymentApi:
+        limitForPeriod: 50
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0s
+
+# Spring Boot Actuator & Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,ratelimiters
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans

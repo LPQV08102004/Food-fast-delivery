@@ -29,6 +29,14 @@ public class Payment {
 
     private Integer attemptCount;
 
+    // MoMo specific fields
+    private String momoRequestId;
+    private String momoOrderId;
+    private String momoTransId;
+    private String momoPayUrl;
+    private Integer momoResultCode;
+    private String momoMessage;
+
     private Instant createdAt;
     private Instant updatedAt;
 
