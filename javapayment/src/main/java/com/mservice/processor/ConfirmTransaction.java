@@ -40,7 +40,7 @@ public class ConfirmTransaction extends AbstractProcess<ConfirmRequest, ConfirmR
                 throw new MoMoException("[ConfirmTransactionResponse] [" + request.getOrderId() + "] -> Error API");
             }
 
-            System.out.println("uweryei7rye8wyreow8: "+ response.getData());
+            LogUtils.debug("[ConfirmTransactionResponse] MoMo response data: " + response.getData());
 
             ConfirmResponse confirmResponse = getGson().fromJson(response.getData(), ConfirmResponse.class);
             String responserawData =   Parameter.ORDER_ID + "=" + confirmResponse.getOrderId() +

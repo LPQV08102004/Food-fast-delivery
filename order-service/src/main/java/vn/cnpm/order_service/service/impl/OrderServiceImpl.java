@@ -33,6 +33,7 @@ public class OrderServiceImpl implements OrderService {
         // Tạo order trước (không có items)
         Order order = Order.builder()
                 .userId(request.getUserId())
+                .restaurantId(request.getRestaurantId())
                 .status(OrderStatus.NEW)
                 .paymentMethod(request.getPaymentMethod())
                 .paymentStatus("PENDING")
@@ -54,6 +55,17 @@ public class OrderServiceImpl implements OrderService {
         for (OrderRequest.OrderItemRequest itemRequest : request.getItems()) {
             // Lấy thông tin sản phẩm từ product service
             ProductDTO product = productClient.getProductById(itemRequest.getProductId());
+
+            // Validate product availability
+            if (product == null) {
+                throw new RuntimeException("Product not found: " + itemRequest.getProductId());
+            }
+
+            // Validate stock availability
+            if (product.getStock() < itemRequest.getQuantity()) {
+                throw new RuntimeException("Insufficient stock for product: " + product.getName() + 
+                    ". Available: " + product.getStock() + ", Requested: " + itemRequest.getQuantity());
+            }
 
             // Tính giá cho item này
             double itemPrice = product.getPrice() * itemRequest.getQuantity();
@@ -78,14 +90,32 @@ public class OrderServiceImpl implements OrderService {
         Order saved = orderRepository.save(order);
         log.info("Order created with id: {}", saved.getId());
 
+        // Reduce stock for all products in the order
+        // CRITICAL: This must be inside @Transactional to rollback order if stock reduction fails
+        for (OrderRequest.OrderItemRequest itemRequest : request.getItems()) {
+            try {
+                productClient.reduceStock(itemRequest.getProductId(), itemRequest.getQuantity());
+                log.info("Reduced stock for product {} by {}", itemRequest.getProductId(), itemRequest.getQuantity());
+            } catch (Exception e) {
+                log.error("CRITICAL: Failed to reduce stock for product {} - rolling back entire order {}",
+                        itemRequest.getProductId(), saved.getId(), e);
+                // Re-throw to trigger @Transactional rollback of the entire order
+                throw new RuntimeException("Stock reduction failed for product " + itemRequest.getProductId()
+                        + ": " + e.getMessage(), e);
+            }
+        }
+
         // Publish OrderCreatedEvent to RabbitMQ for async payment processing
         try {
             OrderCreatedEvent event = OrderCreatedEvent.builder()
                     .orderId(saved.getId())
                     .userId(saved.getUserId())
+                    .restaurantId(saved.getRestaurantId())
                     .totalPrice(saved.getTotalPrice())
                     .paymentMethod(saved.getPaymentMethod())
                     .deliveryAddress(saved.getDeliveryAddress())
+                    .deliveryPhone(saved.getDeliveryPhone())
+                    .deliveryFullName(saved.getDeliveryFullName())
                     .build();
 
             orderEventPublisher.publishOrderCreatedEvent(event);
@@ -122,6 +152,55 @@ public class OrderServiceImpl implements OrderService {
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrderResponse> getOrdersByRestaurantId(Long restaurantId) {
+        return orderRepository.findByRestaurantId(restaurantId)
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+        
+        order.setStatus(status);
+        Order updated = orderRepository.save(order);
+        
+        log.info("Order {} status updated to {}", orderId, status);
+        return mapToDto(updated);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+        
+        // Only allow cancellation if order is not yet delivered
+        if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.CANCELLED) {
+            throw new RuntimeException("Cannot cancel order in status: " + order.getStatus());
+        }
+        
+        order.setStatus(OrderStatus.CANCELLED);
+        Order updated = orderRepository.save(order);
+        
+        // Restore stock for all items
+        for (OrderItem item : order.getOrderItems()) {
+            try {
+                productClient.restoreStock(item.getProductId(), item.getQuantity());
+                log.info("Restored stock for product {} by {}", item.getProductId(), item.getQuantity());
+            } catch (Exception e) {
+                log.error("Failed to restore stock for product {}", item.getProductId(), e);
+            }
+        }
+        
+        log.info("Order {} cancelled", orderId);
+        return mapToDto(updated);
     }
 
     private OrderResponse mapToDto(Order o) {

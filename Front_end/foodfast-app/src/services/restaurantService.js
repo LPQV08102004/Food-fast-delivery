@@ -126,6 +126,16 @@ const restaurantService = {
     }
   },
 
+  // Lấy đơn hàng theo restaurant ID
+  getOrdersByRestaurantId: async (restaurantId) => {
+    try {
+      const response = await api.get(`/orders/restaurant/${restaurantId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
   // Lấy đơn hàng theo ID
   getOrderById: async (orderId) => {
     try {

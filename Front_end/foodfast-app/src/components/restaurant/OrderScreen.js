@@ -1,20 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import restaurantService from '../../services/restaurantService';
+import authService from '../../services/authService';
 import { toast } from 'sonner';
+import { OrderDetailModal } from './OrderDetailModal';
 
 export function OrderScreen() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [restaurantId, setRestaurantId] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    loadOrders();
+    // Lấy thông tin user và restaurantId
+    const currentUser = authService.getCurrentUser();
+    if (currentUser && currentUser.restaurantId) {
+      setRestaurantId(currentUser.restaurantId);
+      loadOrders(currentUser.restaurantId);
+    } else {
+      toast.error('Không tìm thấy thông tin nhà hàng');
+      setLoading(false);
+    }
   }, []);
 
-  const loadOrders = async () => {
+  const loadOrders = async (restId) => {
     try {
       setLoading(true);
-      const data = await restaurantService.getAllOrders();
+      const data = await restaurantService.getOrdersByRestaurantId(restId);
       setOrders(data);
     } catch (error) {
       console.error('Error loading orders:', error);
@@ -43,15 +56,18 @@ export function OrderScreen() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'COMPLETED':
       case 'DELIVERED':
         return 'bg-green-100 text-green-800';
-      case 'PENDING':
-      case 'PROCESSING':
+      case 'NEW':
+      case 'CONFIRMED':
         return 'bg-yellow-100 text-yellow-800';
       case 'CANCELLED':
         return 'bg-red-100 text-red-800';
-      case 'SHIPPING':
+      case 'PREPARING':
+      case 'READY':
+        return 'bg-orange-100 text-orange-800';
+      case 'PICKED_UP':
+      case 'DELIVERING':
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -60,13 +76,32 @@ export function OrderScreen() {
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'PENDING': return 'Chờ xử lý';
-      case 'PROCESSING': return 'Đang xử lý';
-      case 'SHIPPING': return 'Đang giao';
+      case 'NEW': return 'Đơn hàng mới';
+      case 'CONFIRMED': return 'Đã xác nhận';
+      case 'PREPARING': return 'Đang chế biến';
+      case 'READY': return 'Sẵn sàng';
+      case 'PICKED_UP': return 'Đã lấy hàng';
+      case 'DELIVERING': return 'Đang giao';
       case 'DELIVERED': return 'Đã giao';
-      case 'COMPLETED': return 'Hoàn thành';
       case 'CANCELLED': return 'Đã hủy';
       default: return status;
+    }
+  };
+
+  const handleViewOrder = (order) => {
+    setSelectedOrder(order);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedOrder(null);
+  };
+
+  const handleOrderUpdated = () => {
+    // Reload orders after update
+    if (restaurantId) {
+      loadOrders(restaurantId);
     }
   };
 
@@ -134,10 +169,10 @@ export function OrderScreen() {
                     </td>
                     <td className="py-3 px-4">
                       <button 
-                        onClick={() => toast.info(`Xem chi tiết đơn hàng #${order.id}`)}
-                        className="text-blue-600 hover:underline"
+                        onClick={() => handleViewOrder(order)}
+                        className="text-blue-600 hover:underline font-medium"
                       >
-                        view
+                        Xem chi tiết
                       </button>
                     </td>
                   </tr>
@@ -147,6 +182,14 @@ export function OrderScreen() {
           </div>
         )}
       </div>
+
+      {/* Order Detail Modal */}
+      <OrderDetailModal
+        order={selectedOrder}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onOrderUpdated={handleOrderUpdated}
+      />
     </div>
   );
 }

@@ -15,8 +15,7 @@ import {
   Edit,
   Trash2,
   Eye,
-  Loader2,
-  X
+  Loader2
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -29,9 +28,6 @@ import { toast } from 'sonner';
 
 // Import services
 import adminService from '../services/adminService';
-import userService from '../services/userService';
-import orderService from '../services/orderService';
-import productService from '../services/productService';
 import restaurantService from '../services/restaurantService';
 import categoryService from '../services/categoryService';
 
@@ -729,9 +725,7 @@ function OrderScreen() {
         restaurantService.getAllRestaurants().catch(() => [])
       ]);
 
-      console.log('Orders data:', ordersData);
-      console.log('Users data:', usersData);
-      console.log('Restaurants data:', restaurantsData);
+
 
       setOrders(ordersData);
       setUsers(usersData);
@@ -1370,31 +1364,6 @@ function ProductScreen() {
   const handleViewDetail = (product) => {
     setSelectedProduct(product);
     setDetailDialogOpen(true);
-  };
-
-  const handleApproveProduct = async (productId) => {
-    try {
-      await adminService.approveProduct(productId);
-      toast.success('Product approved successfully');
-      fetchProducts();
-    } catch (error) {
-      console.error('Error approving product:', error);
-      toast.error('Failed to approve product');
-    }
-  };
-
-  const handleRejectProduct = async (productId) => {
-    const reason = prompt('Enter rejection reason:');
-    if (!reason) return;
-
-    try {
-      await adminService.rejectProduct(productId, reason);
-      toast.success('Product rejected');
-      fetchProducts();
-    } catch (error) {
-      console.error('Error rejecting product:', error);
-      toast.error('Failed to reject product');
-    }
   };
 
   const handleDeleteProduct = async (productId) => {

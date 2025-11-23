@@ -17,6 +17,7 @@ public class Order {
     private Long id;
 
     private Long userId;
+    private Long restaurantId;  // ID nhà hàng
     private Double totalPrice;
 
     @Enumerated(EnumType.STRING)
@@ -32,6 +33,11 @@ public class Order {
     private String deliveryAddress;
     private String deliveryCity;
     private String deliveryNotes;
+    
+    // Thông tin drone giao hàng
+    private String droneId;
+    private Instant pickedUpAt;  // Thời điểm drone lấy hàng
+    private Instant deliveredAt; // Thời điểm giao hàng thành công
 
     private Instant createdAt;
     private Instant updatedAt;

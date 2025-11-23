@@ -2,6 +2,8 @@ package vn.cnpm.apigateway.filter;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -11,6 +13,8 @@ import org.springframework.web.server.ServerWebExchange;
 
 @Component
 public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAuthenticationFilter.Config> {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Value("${jwt.secret:mySecretKeyForJWTTokenGenerationAndValidation12345}")
     private String jwtSecret;
@@ -67,23 +71,22 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
                                 .request(r -> r.header("X-User-Id", finalUserId)) // <-- Dùng biến mới
                                 .build();
 
-                        // (Khuyên dùng) Cập nhật log để dùng biến mới cho nhất quán
-                        System.out.println("[JWT Filter] Added X-User-Id header: " + finalUserId);
+                        log.debug("[JWT Filter] Added X-User-Id header: {}", finalUserId);
                         return chain.filter(modifiedExchange);
                     } else {
-                        System.err.println("[JWT Filter ERROR] userId not found in token claims. Available claims: " + claims.keySet());
+                        log.error("[JWT Filter ERROR] userId not found in token claims. Available claims: {}", claims.keySet());
                     }
                 } catch (io.jsonwebtoken.ExpiredJwtException e) {
-                    System.err.println("[JWT Filter ERROR] Token expired: " + e.getMessage());
+                    log.error("[JWT Filter ERROR] Token expired: {}", e.getMessage());
                 } catch (io.jsonwebtoken.MalformedJwtException e) {
-                    System.err.println("[JWT Filter ERROR] Malformed token: " + e.getMessage());
+                    log.error("[JWT Filter ERROR] Malformed token: {}", e.getMessage());
                 } catch (io.jsonwebtoken.security.SignatureException e) {
-                    System.err.println("[JWT Filter ERROR] Invalid signature: " + e.getMessage());
+                    log.error("[JWT Filter ERROR] Invalid signature: {}", e.getMessage());
                 } catch (Exception e) {
-                    System.err.println("[JWT Filter ERROR] Token validation failed: " + e.getMessage());
+                    log.error("[JWT Filter ERROR] Token validation failed: {}", e.getMessage());
                 }
             } else {
-                System.err.println("[JWT Filter WARNING] No Authorization header or invalid format");
+                log.warn("[JWT Filter WARNING] No Authorization header or invalid format");
             }
 
             // No token or invalid format, continue without adding header

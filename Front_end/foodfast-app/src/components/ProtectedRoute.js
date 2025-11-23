@@ -13,8 +13,6 @@ export const ProtectedRoute = ({ children }) => {
 
 // Protected Route chỉ cho Admin
 export const AdminRoute = ({ children }) => {
-  const user = authService.getCurrentUser();
-
   if (!authService.isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
@@ -29,16 +27,36 @@ export const AdminRoute = ({ children }) => {
 
 // Protected Route chỉ cho User thường
 export const UserRoute = ({ children }) => {
-  const user = authService.getCurrentUser();
-
   if (!authService.isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
 
-  // Có thể thêm logic kiểm tra role nếu cần
+  // Nếu là admin hoặc restaurant thì redirect về trang riêng của họ
+  if (authService.isAdmin()) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  if (authService.isRestaurant()) {
+    return <Navigate to="/restaurant" replace />;
+  }
 
   return children;
 };
 
-export default { ProtectedRoute, AdminRoute, UserRoute };
+// Protected Route chỉ cho Restaurant
+export const RestaurantRoute = ({ children }) => {
+  if (!authService.isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!authService.isRestaurant()) {
+    // Redirect về home nếu không phải restaurant owner
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+const protectedRoutes = { ProtectedRoute, AdminRoute, UserRoute, RestaurantRoute };
+export default protectedRoutes;
 

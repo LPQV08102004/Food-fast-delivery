@@ -2,6 +2,7 @@ package vn.cnpm.product_service.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.cnpm.product_service.dto.ProductRequest;
 import vn.cnpm.product_service.dto.ProductResponse;
@@ -50,5 +51,25 @@ public class ProductController {
     @GetMapping("/category/by-name")
     public List<ProductResponse> getProductsByCategoryName(@RequestParam("categoryName") String categoryName) {
         return productService.getProductsByCategoryName(categoryName);
+    }
+
+    @PutMapping("/{id}/reduce-stock/{quantity}")
+    public ResponseEntity<Void> reduceStock(@PathVariable("id") Long id, @PathVariable("quantity") int quantity) {
+        try {
+            productService.reduceStock(id, quantity);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Error reducing stock for product " + id + ": " + e.getMessage(), e);
+        }
+    }
+
+    @PutMapping("/{id}/restore-stock/{quantity}")
+    public ResponseEntity<Void> restoreStock(@PathVariable("id") Long id, @PathVariable("quantity") int quantity) {
+        try {
+            productService.restoreStock(id, quantity);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Error restoring stock for product " + id + ": " + e.getMessage(), e);
+        }
     }
 }

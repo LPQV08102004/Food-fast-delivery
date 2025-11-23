@@ -16,4 +16,6 @@ public interface ProductService {
     List<ProductResponse> getAllProducts();
     ProductResponse updateProduct(Long id, ProductRequest request);
     void deleteProduct(Long id);
+    void reduceStock(Long productId, int quantity);
+    void restoreStock(Long productId, int quantity);
 }

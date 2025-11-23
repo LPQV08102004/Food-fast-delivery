@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.6'
+    id 'org.springframework.boot' version '3.3.4'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -29,7 +29,7 @@ repositories {
 
 // Chỉ định phiên bản Spring Cloud BOM - PHẢI ĐẶT TRƯỚC dependencies
 ext {
-    set('springCloudVersion', "2025.0.0")
+    set('springCloudVersion', "2023.0.3")
 }
 
 // Import Spring Cloud BOM - PHẢI ĐẶT TRƯỚC dependencies

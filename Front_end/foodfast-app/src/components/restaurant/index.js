@@ -6,3 +6,4 @@ export { ProductScreen } from './ProductScreen';
 export { OrderScreen } from './OrderScreen';
 export { RevenueScreen } from './RevenueScreen';
 export { SettingScreen } from './SettingScreen';
+export { AddProductModal } from './AddProductModal';

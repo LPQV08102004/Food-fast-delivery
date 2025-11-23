@@ -36,10 +36,10 @@ public class InquiryCbToken extends AbstractProcess<CbTokenInquiryRequest, CbTok
             HttpResponse response = execute.sendToMoMo(environment.getMomoEndpoint().getCbTokenInquiryUrl(), payload);
 
             if (response.getStatus() != 200) {
-                throw new MoMoException("[CbTokenInquiryResponse] [" + request.getOrderId() + "] -> Error API");
+                throw new MoMoException("[InquiryCbTokenResponse] [" + request.getOrderId() + "] -> Error API");
             }
 
-            System.out.println("uweryei7rye8wyreow8: "+ response.getData());
+            LogUtils.debug("[InquiryCbTokenResponse] MoMo response data: " + response.getData());
 
             CbTokenInquiryResponse cbTokenInquiryResponse = getGson().fromJson(response.getData(), CbTokenInquiryResponse.class);
             String responserawData = Parameter.REQUEST_ID + "=" + cbTokenInquiryResponse.getRequestId() +

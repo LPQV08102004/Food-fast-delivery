@@ -33,17 +33,48 @@ public class MoMoCallbackController {
             String transId = callbackData.get("transId") != null ?
                     callbackData.get("transId").toString() : null;
 
+            // Validate required fields
+            if (orderId == null || requestId == null || resultCode == null) {
+                log.error("Invalid MoMo callback - missing required fields");
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "error",
+                        "message", "Missing required fields"
+                ));
+            }
+
             // Tìm payment record
             Payment payment = paymentRepository.findByMomoOrderId(orderId)
                     .orElseThrow(() -> new RuntimeException("Payment not found for orderId: " + orderId));
 
-            // Cập nhật trạng thái
+            // Kiểm tra payment đã được xử lý chưa
+            if (payment.getStatus() == PaymentStatus.SUCCESS) {
+                log.warn("Payment already processed successfully for order: {}", orderId);
+                return ResponseEntity.ok(Map.of(
+                        "status", "success",
+                        "message", "Payment already processed"
+                ));
+            }
+
+            // Validate requestId matches
+            if (!requestId.equals(payment.getMomoRequestId())) {
+                log.error("RequestId mismatch for order {}. Expected: {}, Received: {}", 
+                        orderId, payment.getMomoRequestId(), requestId);
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "error",
+                        "message", "Invalid requestId"
+                ));
+            }
+
+            // Cập nhật trạng thái dựa trên resultCode
             if (resultCode == 0) {
+                // Thanh toán thành công
                 payment.setStatus(PaymentStatus.SUCCESS);
-                log.info("Payment successful for order: {}", orderId);
+                log.info("Payment successful for order: {} with transId: {}", orderId, transId);
             } else {
+                // Thanh toán thất bại
                 payment.setStatus(PaymentStatus.FAILED);
-                log.warn("Payment failed for order: {} with code: {}", orderId, resultCode);
+                log.warn("Payment failed for order: {} with resultCode: {}, message: {}", 
+                        orderId, resultCode, message);
             }
 
             payment.setMomoTransId(transId);

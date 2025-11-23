@@ -39,7 +39,7 @@ public class BindingToken extends AbstractProcess<BindingTokenRequest, BindingTo
                 throw new MoMoException("[BindingTokenResponse] [" + request.getOrderId() + "] -> Error API");
             }
 
-            System.out.println("uweryei7rye8wyreow8: "+ response.getData());
+            LogUtils.debug("[BindingTokenResponse] MoMo response data: " + response.getData());
 
             BindingTokenResponse BindingTokenResponse = getGson().fromJson(response.getData(), BindingTokenResponse.class);
             String responserawData = Parameter.REQUEST_ID + "=" + BindingTokenResponse.getRequestId() +

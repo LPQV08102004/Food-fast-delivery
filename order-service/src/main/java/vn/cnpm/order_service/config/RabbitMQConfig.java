@@ -14,14 +14,22 @@ public class RabbitMQConfig {
     // Exchange names
     public static final String ORDER_EXCHANGE = "order.exchange";
     public static final String PAYMENT_EXCHANGE = "payment.exchange";
+    public static final String RESTAURANT_EXCHANGE = "restaurant.exchange";
+    public static final String DELIVERY_EXCHANGE = "delivery.exchange";
 
     // Queue names
     public static final String ORDER_CREATED_QUEUE = "order.created.queue";
     public static final String PAYMENT_PROCESSED_QUEUE = "payment.processed.queue";
+    public static final String ORDER_PAID_QUEUE = "order.paid.queue";
+    public static final String ORDER_READY_QUEUE = "order.ready.queue";
+    public static final String ORDER_PICKED_UP_QUEUE = "order.pickedup.queue";
 
     // Routing keys
     public static final String ORDER_CREATED_ROUTING_KEY = "order.created";
     public static final String PAYMENT_PROCESSED_ROUTING_KEY = "payment.processed";
+    public static final String ORDER_PAID_ROUTING_KEY = "order.paid";
+    public static final String ORDER_READY_ROUTING_KEY = "order.ready";
+    public static final String ORDER_PICKED_UP_ROUTING_KEY = "order.pickedup";
 
     @Bean
     public MessageConverter jsonMessageConverter() {
@@ -47,6 +55,18 @@ public class RabbitMQConfig {
         return new TopicExchange(PAYMENT_EXCHANGE);
     }
 
+    // Restaurant Exchange
+    @Bean
+    public TopicExchange restaurantExchange() {
+        return new TopicExchange(RESTAURANT_EXCHANGE);
+    }
+
+    // Delivery Exchange
+    @Bean
+    public TopicExchange deliveryExchange() {
+        return new TopicExchange(DELIVERY_EXCHANGE);
+    }
+
     // Order Created Queue
     @Bean
     public Queue orderCreatedQueue() {
@@ -57,6 +77,24 @@ public class RabbitMQConfig {
     @Bean
     public Queue paymentProcessedQueue() {
         return new Queue(PAYMENT_PROCESSED_QUEUE, true);
+    }
+
+    // Order Paid Queue (cho Restaurant Service)
+    @Bean
+    public Queue orderPaidQueue() {
+        return new Queue(ORDER_PAID_QUEUE, true);
+    }
+
+    // Order Ready Queue (cho Delivery Service)
+    @Bean
+    public Queue orderReadyQueue() {
+        return new Queue(ORDER_READY_QUEUE, true);
+    }
+
+    // Order Picked Up Queue
+    @Bean
+    public Queue orderPickedUpQueue() {
+        return new Queue(ORDER_PICKED_UP_QUEUE, true);
     }
 
     // Binding: Order Created Queue -> Order Exchange
@@ -75,6 +113,33 @@ public class RabbitMQConfig {
                 .bind(paymentProcessedQueue())
                 .to(paymentExchange())
                 .with(PAYMENT_PROCESSED_ROUTING_KEY);
+    }
+
+    // Binding: Order Paid Queue -> Payment Exchange
+    @Bean
+    public Binding orderPaidBinding() {
+        return BindingBuilder
+                .bind(orderPaidQueue())
+                .to(paymentExchange())
+                .with(ORDER_PAID_ROUTING_KEY);
+    }
+
+    // Binding: Order Ready Queue -> Restaurant Exchange
+    @Bean
+    public Binding orderReadyBinding() {
+        return BindingBuilder
+                .bind(orderReadyQueue())
+                .to(restaurantExchange())
+                .with(ORDER_READY_ROUTING_KEY);
+    }
+
+    // Binding: Order Picked Up Queue -> Delivery Exchange
+    @Bean
+    public Binding orderPickedUpBinding() {
+        return BindingBuilder
+                .bind(orderPickedUpQueue())
+                .to(deliveryExchange())
+                .with(ORDER_PICKED_UP_ROUTING_KEY);
     }
 }
 

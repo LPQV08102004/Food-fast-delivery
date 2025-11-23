@@ -39,7 +39,7 @@ public class DeleteToken extends AbstractProcess<DeleteTokenRequest, DeleteToken
                 throw new MoMoException("[DeleteTokenResponse] [" + request.getOrderId() + "] -> Error API");
             }
 
-            System.out.println("uweryei7rye8wyreow8: "+ response.getData());
+            LogUtils.debug("[DeleteTokenResponse] MoMo response data: " + response.getData());
 
             DeleteTokenResponse deleteTokenResponse = getGson().fromJson(response.getData(), DeleteTokenResponse.class);
             String responserawData = Parameter.REQUEST_ID + "=" +

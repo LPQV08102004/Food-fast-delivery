@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Loader2 } from 'lucide-react';
 import restaurantService from '../../services/restaurantService';
 import { toast } from 'sonner';
+import { AddProductModal } from './AddProductModal';
 
 export function ProductScreen({ restaurantId = 1 }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -98,7 +100,7 @@ export function ProductScreen({ restaurantId = 1 }) {
             />
           </div>
           <button 
-            onClick={() => toast.info('Chức năng thêm sản phẩm đang phát triển')}
+            onClick={() => setIsAddModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -108,13 +110,30 @@ export function ProductScreen({ restaurantId = 1 }) {
         
         {filteredProducts.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">Không tìm thấy sản phẩm nào</p>
+            {products.length === 0 ? (
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <Plus className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-900 font-medium mb-2">Chưa có sản phẩm nào</p>
+                <p className="text-gray-500 mb-4">Bắt đầu thêm sản phẩm đầu tiên của bạn</p>
+                <button 
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Thêm sản phẩm đầu tiên
+                </button>
+              </div>
+            ) : (
+              <p className="text-gray-500">Không tìm thấy sản phẩm phù hợp với từ khóa "{searchTerm}"</p>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Image</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Price</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Stock</th>
@@ -126,6 +145,22 @@ export function ProductScreen({ restaurantId = 1 }) {
               <tbody>
                 {filteredProducts.map((product) => (
                   <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      {product.image_urls && product.image_urls.length > 0 ? (
+                        <img 
+                          src={product.image_urls[0]} 
+                          alt={product.name}
+                          className="w-12 h-12 object-cover rounded-lg border border-gray-200"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/48?text=No+Image';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <span className="text-xs text-gray-400">No image</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="py-3 px-4">{product.name}</td>
                     <td className="py-3 px-4">{formatPrice(product.price)}</td>
                     <td className="py-3 px-4">{product.stock}</td>
@@ -161,6 +196,14 @@ export function ProductScreen({ restaurantId = 1 }) {
           </div>
         )}
       </div>
+
+      {/* Add Product Modal */}
+      <AddProductModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        restaurantId={restaurantId}
+        onProductAdded={reloadProducts}
+      />
     </div>
   );
 }

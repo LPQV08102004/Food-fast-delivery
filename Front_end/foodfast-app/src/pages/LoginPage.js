@@ -30,7 +30,7 @@ export default function LoginPage() {
         password: formData.password
       });
 
-      console.log('Login successful:', response);
+
 
       // Lấy role từ response hoặc user object
       const userRole = response.user?.role || authService.getUserRole();

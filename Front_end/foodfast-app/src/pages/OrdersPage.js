@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Package,
@@ -131,18 +131,7 @@ export default function OrdersPage() {
   const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser) {
-      toast.error('Please login to view orders');
-      navigate('/login');
-      return;
-    }
-    setUser(currentUser);
-    fetchOrders();
-  }, [navigate]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -184,7 +173,18 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser) {
+      toast.error('Please login to view orders');
+      navigate('/login');
+      return;
+    }
+    setUser(currentUser);
+    fetchOrders();
+  }, [navigate, fetchOrders]);
 
   const handleViewDetails = (order) => {
     setSelectedOrder(order);

@@ -73,29 +73,45 @@ public class PaymentServiceImpl implements PaymentService {
                 );
 
                 if (momoResponse != null && momoResponse.getResultCode() == 0) {
+                    // Kiểm tra bắt buộc phải có URL thanh toán
+                    if (momoResponse.getPayUrl() == null || momoResponse.getPayUrl().isEmpty()) {
+                        payment.setStatus(PaymentStatus.FAILED);
+                        payment.setMomoMessage("MoMo payment URL is missing - Payment gateway may be unavailable");
+                        log.error("MoMo payment URL missing for order {} - Gateway not working properly", req.getOrderId());
+                        throw new PaymentException("MoMo payment gateway is not available. Please try again later.");
+                    }
+                    
                     payment.setMomoRequestId(momoResponse.getRequestId());
                     payment.setMomoOrderId(momoResponse.getOrderId());
                     payment.setMomoPayUrl(momoResponse.getPayUrl());
                     payment.setMomoResultCode(momoResponse.getResultCode());
                     payment.setMomoMessage(momoResponse.getMessage());
                     payment.setStatus(PaymentStatus.PENDING);
-                    log.info("MoMo payment initiated successfully for order {}", req.getOrderId());
+                    log.info("MoMo payment initiated successfully for order {} - PayURL: {}", req.getOrderId(), momoResponse.getPayUrl());
                 } else {
                     payment.setStatus(PaymentStatus.FAILED);
                     payment.setMomoResultCode(momoResponse != null ? momoResponse.getResultCode() : -1);
                     payment.setMomoMessage(momoResponse != null ? momoResponse.getMessage() : "MoMo API error");
                     log.error("MoMo payment failed for order {}: {}", req.getOrderId(),
                             momoResponse != null ? momoResponse.getMessage() : "Unknown error");
+                    throw new PaymentException("Failed to create MoMo payment: " + 
+                            (momoResponse != null ? momoResponse.getMessage() : "Unknown error"));
                 }
+            } catch (PaymentException e) {
+                // Re-throw PaymentException
+                throw e;
             } catch (Exception e) {
                 payment.setStatus(PaymentStatus.FAILED);
                 payment.setMomoMessage("Exception: " + e.getMessage());
                 log.error("Exception creating MoMo payment for order {}", req.getOrderId(), e);
+                throw new PaymentException("MoMo payment service error: " + e.getMessage());
             }
         } else {
-            // Other payment methods - simulate success/failure
-            payment.setStatus(PaymentStatus.SUCCESS);
-            log.info("Payment processed with method: {}", method);
+            // Các phương thức thanh toán khác chưa được tích hợp
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setMomoMessage("Payment method not supported: " + method);
+            log.error("Unsupported payment method {} for order {}", method, req.getOrderId());
+            throw new PaymentException("Payment method " + method + " is not supported. Please use MOMO.");
         }
 
         Payment saved = repository.save(payment);

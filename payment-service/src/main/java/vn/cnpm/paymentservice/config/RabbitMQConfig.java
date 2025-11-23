@@ -18,10 +18,12 @@ public class RabbitMQConfig {
     // Queue names
     public static final String ORDER_CREATED_QUEUE = "order.created.queue";
     public static final String PAYMENT_PROCESSED_QUEUE = "payment.processed.queue";
+    public static final String ORDER_PAID_QUEUE = "order.paid.queue";
 
     // Routing keys
     public static final String ORDER_CREATED_ROUTING_KEY = "order.created";
     public static final String PAYMENT_PROCESSED_ROUTING_KEY = "payment.processed";
+    public static final String ORDER_PAID_ROUTING_KEY = "order.paid";
 
     @Bean
     public MessageConverter jsonMessageConverter() {
@@ -59,6 +61,12 @@ public class RabbitMQConfig {
         return new Queue(PAYMENT_PROCESSED_QUEUE, true);
     }
 
+    // Order Paid Queue
+    @Bean
+    public Queue orderPaidQueue() {
+        return new Queue(ORDER_PAID_QUEUE, true);
+    }
+
     // Binding: Order Created Queue -> Order Exchange
     @Bean
     public Binding orderCreatedBinding() {
@@ -75,5 +83,14 @@ public class RabbitMQConfig {
                 .bind(paymentProcessedQueue())
                 .to(paymentExchange())
                 .with(PAYMENT_PROCESSED_ROUTING_KEY);
+    }
+
+    // Binding: Order Paid Queue -> Payment Exchange
+    @Bean
+    public Binding orderPaidBinding() {
+        return BindingBuilder
+                .bind(orderPaidQueue())
+                .to(paymentExchange())
+                .with(ORDER_PAID_ROUTING_KEY);
     }
 }

@@ -18,10 +18,20 @@ export function CartProvider({ children }) {
   // Thêm sản phẩm vào giỏ hàng
   const addToCart = (product, quantity = 1) => {
     setCartItems(prevItems => {
+      // Kiểm tra nếu giỏ hàng đã có sản phẩm từ nhà hàng khác
+      if (prevItems.length > 0 && product.restaurantId) {
+        const existingRestaurantId = prevItems[0].restaurantId;
+        if (existingRestaurantId && existingRestaurantId !== product.restaurantId) {
+          toast.error('You can only order from one restaurant at a time. Please clear your cart first.');
+          return prevItems; // Không thêm sản phẩm
+        }
+      }
+
       const existingItem = prevItems.find(item => item.id === product.id);
 
       if (existingItem) {
         // Nếu sản phẩm đã có trong giỏ, tăng số lượng
+        toast.success(`Updated ${product.name} quantity in cart!`);
         return prevItems.map(item =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + quantity }
@@ -29,10 +39,10 @@ export function CartProvider({ children }) {
         );
       } else {
         // Thêm sản phẩm mới vào giỏ
+        toast.success(`${product.name} added to cart!`);
         return [...prevItems, { ...product, quantity }];
       }
     });
-    toast.success(`${product.name} added to cart!`);
   };
 
   // Cập nhật số lượng sản phẩm

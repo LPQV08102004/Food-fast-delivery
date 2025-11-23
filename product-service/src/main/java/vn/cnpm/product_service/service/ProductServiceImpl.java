@@ -1,7 +1,9 @@
 package vn.cnpm.product_service.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.cnpm.product_service.dto.ProductRequest;
 import vn.cnpm.product_service.dto.ProductResponse;
 import vn.cnpm.product_service.models.Category;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
@@ -41,6 +44,18 @@ public class ProductServiceImpl implements ProductService {
                 .restaurant(restaurant)
                 .isActive(request.getIsActive() != null ? request.getIsActive() : true)
                 .build();
+        
+        // Thêm ảnh sản phẩm nếu có
+        if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
+            List<Product_image> images = request.getImageUrls().stream()
+                    .map(url -> Product_image.builder()
+                            .imageUrl(url)
+                            .product(product)
+                            .build())
+                    .collect(Collectors.toList());
+            product.setImages(images);
+        }
+        
         productRepository.save(product);
         return mapToResponse(product);
     }
@@ -92,6 +107,25 @@ public class ProductServiceImpl implements ProductService {
         if (request.getIsActive() != null) {
             product.setIsActive(request.getIsActive());
         }
+        
+        // Cập nhật ảnh sản phẩm nếu có
+        if (request.getImageUrls() != null) {
+            // Xóa ảnh cũ
+            if (product.getImages() != null) {
+                product.getImages().clear();
+            }
+            // Thêm ảnh mới
+            if (!request.getImageUrls().isEmpty()) {
+                List<Product_image> images = request.getImageUrls().stream()
+                        .map(url -> Product_image.builder()
+                                .imageUrl(url)
+                                .product(product)
+                                .build())
+                        .collect(Collectors.toList());
+                product.setImages(images);
+            }
+        }
+        
         productRepository.save(product);
         return mapToResponse(product);
     }
@@ -100,6 +134,44 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         productRepository.delete(product);
     }
+
+    @Override
+    @Transactional
+    public void reduceStock(Long productId, int quantity) {
+        log.info("Attempting to reduce stock for product {} by quantity {}", productId, quantity);
+        
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
+        
+        log.info("Current stock for product {}: {}", productId, product.getStock());
+        
+        if (product.getStock() < quantity) {
+            log.error("Insufficient stock for product {}: Available {}, Requested {}", 
+                    productId, product.getStock(), quantity);
+            throw new RuntimeException("Insufficient stock for product: " + product.getName() + 
+                ". Available: " + product.getStock() + ", Requested: " + quantity);
+        }
+        
+        product.setStock(product.getStock() - quantity);
+        productRepository.save(product);
+        
+        log.info("Successfully reduced stock for product {} to {}", productId, product.getStock());
+    }
+
+    @Override
+    @Transactional
+    public void restoreStock(Long productId, int quantity) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
+        
+        // Restore stock (add back the quantity)
+        product.setStock(product.getStock() + quantity);
+        productRepository.save(product);
+        
+        log.info("Restored stock for product {} by {}, new stock: {}", 
+                productId, quantity, product.getStock());
+    }
+
     public ProductResponse mapToResponse(Product product) {
         return ProductResponse.builder()
                 .id(product.getId())

@@ -36,10 +36,10 @@ public class QueryTransactionStatus extends AbstractProcess<QueryStatusTransacti
             HttpResponse response = execute.sendToMoMo(environment.getMomoEndpoint().getQueryUrl(), payload);
 
             if (response.getStatus() != 200) {
-                throw new MoMoException("[QueryTransactionResponse] [" + request.getOrderId() + "] -> Error API");
+                throw new MoMoException("[QueryTransactionStatusResponse] [" + request.getOrderId() + "] -> Error API");
             }
 
-            System.out.println("uweryei7rye8wyreow8: "+ response.getData());
+            LogUtils.debug("[QueryTransactionStatusResponse] MoMo response data: " + response.getData());
 
             QueryStatusTransactionResponse queryStatusTransactionResponse = getGson().fromJson(response.getData(), QueryStatusTransactionResponse.class);
             String responserawData = Parameter.REQUEST_ID + "=" + queryStatusTransactionResponse.getRequestId() +

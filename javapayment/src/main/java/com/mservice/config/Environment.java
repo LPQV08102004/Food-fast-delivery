@@ -81,11 +81,12 @@ public class Environment {
             }
 
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            System.err.println("Configuration file not found: " + e.getMessage());
+            throw new RuntimeException("Failed to load environment.properties", e);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("IOException occurred: " + e.getMessage());
+            throw new RuntimeException("Failed to load environment.properties", e);
         }
-        return null;
     }
 
     public MoMoEndpoint getMomoEndpoint() {

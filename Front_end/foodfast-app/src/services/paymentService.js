@@ -81,6 +81,29 @@ const paymentService = {
       throw error.response?.data || error.message;
     }
   },
+
+  // MoMo specific APIs
+  // Lấy MoMo payment result
+  getMoMoPaymentResult: async (orderId, resultCode) => {
+    try {
+      const response = await api.get(`/payments/momo/result`, {
+        params: { orderId, resultCode }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Xử lý MoMo callback (internal use)
+  handleMoMoCallback: async (callbackData) => {
+    try {
+      const response = await api.post('/payments/momo/callback', callbackData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };
 
 export default paymentService;

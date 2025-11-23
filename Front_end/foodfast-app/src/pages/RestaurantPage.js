@@ -11,23 +11,65 @@ import authService from '../services/authService';
 
 function RestaurantPage() {
   const [activeScreen, setActiveScreen] = useState('profile');
+  const [restaurantId, setRestaurantId] = useState(null);
   
-  // Lấy restaurantId từ user đã đăng nhập
-  const user = authService.getCurrentUser();
-  const restaurantId = user?.restaurantId || user?.id || 1; // Fallback về 1 nếu không có
-
-  // Log để debug
+  // Lấy restaurantId từ authService
   useEffect(() => {
-    console.log('Current user:', user);
-    console.log('Restaurant ID:', restaurantId);
+    const fetchRestaurantId = async () => {
+      try {
+        const id = authService.getRestaurantId();
+        
+        if (!id) {
+          console.error('Không tìm thấy restaurantId cho user này');
+          // Nếu chưa có restaurantId, thử lấy lại từ backend
+          const user = authService.getCurrentUser();
+          if (user && (user.role === 'RESTAURANT' || user.role === 'RESTAURANT_OWNER')) {
+            try {
+              const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api'}/restaurants/user/${user.id}`, {
+                headers: {
+                  'Authorization': `Bearer ${authService.getToken()}`
+                }
+              });
+              
+              if (response.ok) {
+                const data = await response.json();
+                if (data && data.id) {
+                  localStorage.setItem('restaurantId', data.id.toString());
+                  const updatedUser = { ...user, restaurantId: data.id };
+                  localStorage.setItem('user', JSON.stringify(updatedUser));
+                  setRestaurantId(data.id);
 
-    // Kiểm tra quyền truy cập
-    if (!authService.isRestaurant() && !authService.isAdmin()) {
-      console.warn('User không có quyền truy cập restaurant dashboard');
-    }
-  }, [user, restaurantId]);
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching restaurant from backend:', error);
+            }
+          }
+        } else {
+          setRestaurantId(id);
+
+        }
+      } catch (error) {
+        console.error('Error getting restaurantId:', error);
+      }
+    };
+
+    fetchRestaurantId();
+  }, []);
 
   const renderScreen = () => {
+    // Nếu đang loading hoặc chưa có restaurantId, hiển thị loading
+    if (!restaurantId) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Đang tải thông tin nhà hàng...</p>
+          </div>
+        </div>
+      );
+    }
+
     switch (activeScreen) {
       case 'profile':
         return <ProfileScreen restaurantId={restaurantId} />;

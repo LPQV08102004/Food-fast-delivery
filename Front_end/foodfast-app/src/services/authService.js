@@ -10,6 +10,21 @@ const authService = {
         localStorage.setItem('token', response.data.token);
         if (response.data.user) {
           localStorage.setItem('user', JSON.stringify(response.data.user));
+          
+          // Nếu là restaurant owner, lấy restaurantId từ backend
+          if (response.data.user.role === 'RESTAURANT' || response.data.user.role === 'RESTAURANT_OWNER') {
+            try {
+              const restaurantResponse = await api.get(`/restaurants/user/${response.data.user.id}`);
+              if (restaurantResponse.data && restaurantResponse.data.id) {
+                localStorage.setItem('restaurantId', restaurantResponse.data.id.toString());
+                // Cập nhật user object với restaurantId
+                const updatedUser = { ...response.data.user, restaurantId: restaurantResponse.data.id };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+              }
+            } catch (restaurantError) {
+              console.error('Error fetching restaurant:', restaurantError);
+            }
+          }
         }
       }
       return response.data;
@@ -26,6 +41,21 @@ const authService = {
         localStorage.setItem('token', response.data.token);
         if (response.data.user) {
           localStorage.setItem('user', JSON.stringify(response.data.user));
+          
+          // Nếu là restaurant owner, lấy restaurantId từ backend
+          if (response.data.user.role === 'RESTAURANT' || response.data.user.role === 'RESTAURANT_OWNER') {
+            try {
+              const restaurantResponse = await api.get(`/restaurants/user/${response.data.user.id}`);
+              if (restaurantResponse.data && restaurantResponse.data.id) {
+                localStorage.setItem('restaurantId', restaurantResponse.data.id.toString());
+                // Cập nhật user object với restaurantId
+                const updatedUser = { ...response.data.user, restaurantId: restaurantResponse.data.id };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+              }
+            } catch (restaurantError) {
+              console.error('Error fetching restaurant:', restaurantError);
+            }
+          }
         }
       }
       return response.data;
@@ -38,6 +68,7 @@ const authService = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('restaurantId');
   },
 
   // Lấy user hiện tại
@@ -77,10 +108,15 @@ const authService = {
     return user?.role === 'RESTAURANT' || user?.role === 'RESTAURANT_OWNER';
   },
 
-  // Lấy restaurantId từ user hiện tại
+  // Lấy restaurantId từ user hiện tại hoặc localStorage
   getRestaurantId: () => {
     const user = authService.getCurrentUser();
-    return user?.restaurantId || null;
+    if (user?.restaurantId) {
+      return user.restaurantId;
+    }
+    // Fallback: lấy từ localStorage
+    const restaurantId = localStorage.getItem('restaurantId');
+    return restaurantId ? parseInt(restaurantId) : null;
   },
 
   // Kiểm tra role của user

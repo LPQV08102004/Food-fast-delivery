@@ -1,6 +1,7 @@
 package vn.cnpm.product_service.dto;
 
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class ProductRequest {
@@ -11,4 +12,5 @@ public class ProductRequest {
     private Long categoryId;
     private Long restaurantId;
     private Boolean isActive;
+    private List<String> imageUrls; // Danh sách URL ảnh sản phẩm
 }

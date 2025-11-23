@@ -9,9 +9,10 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="eureka-service" />
+        <module name="delivery-service" />
         <module name="config-service" />
       </profile>
-      <profile name="Annotation profile for user-service" enabled="true">
+      <profile name="Annotation profile for product-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -21,6 +22,13 @@
         <module name="product-service" />
         <module name="user-service" />
       </profile>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.34/ec547ef414ab1d2c040118fb9c1c265ada63af14/lombok-1.18.34.jar" />
+        </processorPath>
+        <module name="order-service.main" />
+      </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
@@ -29,6 +37,7 @@
       <module name="api-gateway.main" options="-parameters" />
       <module name="api-gateway.test" options="-parameters" />
       <module name="config-service" options="-parameters" />
+      <module name="delivery-service" options="-parameters" />
       <module name="eureka-service" options="-parameters" />
       <module name="order-service" options="-parameters" />
       <module name="order-service.main" options="-parameters" />

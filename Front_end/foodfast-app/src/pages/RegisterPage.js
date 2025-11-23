@@ -56,7 +56,7 @@ export default function RegisterPage() {
         phone: formData.phone
       });
 
-      console.log('Registration successful:', response);
+
 
       // Sau khi đăng ký thành công, tự động đăng nhập
       const loginResponse = await authService.login({
@@ -64,7 +64,7 @@ export default function RegisterPage() {
         password: formData.password
       });
 
-      console.log('Auto-login successful:', loginResponse);
+
 
       // Chuyển sang trang sản phẩm
       navigate('/products');

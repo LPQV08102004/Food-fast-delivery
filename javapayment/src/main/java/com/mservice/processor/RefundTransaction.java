@@ -36,10 +36,10 @@ public class RefundTransaction extends AbstractProcess<RefundMoMoRequest, Refund
             HttpResponse response = execute.sendToMoMo(environment.getMomoEndpoint().getRefundUrl(), payload);
 
             if (response.getStatus() != 200) {
-                throw new MoMoException("[RefundResponse] [" + request.getOrderId() + "] -> Error API");
+                throw new MoMoException("[RefundTransactionResponse] [" + request.getOrderId() + "] -> Error API");
             }
 
-            System.out.println("uweryei7rye8wyreow8: "+ response.getData());
+            LogUtils.debug("[RefundTransactionResponse] MoMo response data: " + response.getData());
 
             RefundMoMoResponse refundMoMoResponse = getGson().fromJson(response.getData(), RefundMoMoResponse.class);
             String responserawData = Parameter.REQUEST_ID + "=" + refundMoMoResponse.getRequestId() +

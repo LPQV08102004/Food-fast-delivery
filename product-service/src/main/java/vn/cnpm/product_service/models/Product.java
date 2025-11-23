@@ -16,12 +16,19 @@ public class Product {
     @Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     private Long id;
+    
+    @Version
+    @Column(columnDefinition = "BIGINT DEFAULT 0")
+    @Builder.Default
+    private Long version = 0L;  // For optimistic locking - initialize to 0
+    
     @Column(nullable = false)
     private String name;
     private String description;
     private Double price;
     private int stock;
-    private Boolean isActive=true;
+    @Builder.Default
+    private Boolean isActive = true;
     @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="category_id")
     private Category category;

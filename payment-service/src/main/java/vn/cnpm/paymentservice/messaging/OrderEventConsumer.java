@@ -6,6 +6,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import vn.cnpm.paymentservice.config.RabbitMQConfig;
 import vn.cnpm.paymentservice.event.OrderCreatedEvent;
+import vn.cnpm.paymentservice.event.OrderPaidEvent;
 import vn.cnpm.paymentservice.event.PaymentProcessedEvent;
 import vn.cnpm.paymentservice.model.Payment;
 import vn.cnpm.paymentservice.model.PaymentMethod;
@@ -59,6 +60,22 @@ public class OrderEventConsumer {
                     .build();
 
             paymentEventPublisher.publishPaymentProcessedEvent(paymentEvent);
+
+            // If payment successful, publish OrderPaidEvent for Restaurant Service
+            if (paymentSuccess) {
+                OrderPaidEvent orderPaidEvent = OrderPaidEvent.builder()
+                        .orderId(event.getOrderId())
+                        .userId(event.getUserId())
+                        .restaurantId(event.getRestaurantId())
+                        .totalPrice(event.getTotalPrice())
+                        .deliveryAddress(event.getDeliveryAddress())
+                        .deliveryPhone(event.getDeliveryPhone())
+                        .deliveryFullName(event.getDeliveryFullName())
+                        .build();
+
+                paymentEventPublisher.publishOrderPaidEvent(orderPaidEvent);
+                log.info("OrderPaidEvent published for restaurant notification");
+            }
 
         } catch (Exception e) {
             log.error("Failed to process OrderCreatedEvent for orderId: {}",

@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import vn.cnpm.paymentservice.config.RabbitMQConfig;
+import vn.cnpm.paymentservice.event.OrderPaidEvent;
 import vn.cnpm.paymentservice.event.PaymentProcessedEvent;
 
 @Component
@@ -31,6 +32,26 @@ public class PaymentEventPublisher {
             log.error("Failed to publish PaymentProcessedEvent for orderId: {}",
                     event.getOrderId(), e);
             throw new RuntimeException("Failed to publish payment processed event", e);
+        }
+    }
+
+    public void publishOrderPaidEvent(OrderPaidEvent event) {
+        try {
+            log.info("Publishing OrderPaidEvent for orderId: {} to Restaurant Service",
+                    event.getOrderId());
+
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.PAYMENT_EXCHANGE,
+                    RabbitMQConfig.ORDER_PAID_ROUTING_KEY,
+                    event
+            );
+
+            log.info("OrderPaidEvent published successfully for orderId: {}",
+                    event.getOrderId());
+        } catch (Exception e) {
+            log.error("Failed to publish OrderPaidEvent for orderId: {}",
+                    event.getOrderId(), e);
+            throw new RuntimeException("Failed to publish order paid event", e);
         }
     }
 }

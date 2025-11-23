@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  ShoppingCart, User, MapPin, CreditCard, Wallet, Banknote,
-  Smartphone, Check, ArrowLeft, ShoppingBag, UtensilsCrossed,
+  MapPin, CreditCard, Wallet, Banknote,
+  Check, ArrowLeft, ShoppingBag, UtensilsCrossed,
   CheckCircle
 } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import { useCart } from "../contexts/CartContext";
 import authService from "../services/authService";
 import orderService from "../services/orderService";
+import apiConfig from "../config/apiConfig";
 
 const DELIVERY_FEE = 3.5;
 const TAX_RATE = 0.1;
@@ -77,8 +78,8 @@ export default function PaymentPage() {
   const navigate = useNavigate();
   const { cartItems, getSubtotal, clearCart } = useCart();
   const [user, setUser] = useState(null);
-  const [currentStep, setCurrentStep] = useState(2);
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [currentStep] = useState(2);
+  const [paymentMethod, setPaymentMethod] = useState("momo");
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderId, setOrderId] = useState(null);
@@ -90,13 +91,6 @@ export default function PaymentPage() {
     address: "",
     city: "",
     notes: ""
-  });
-
-  const [cardInfo, setCardInfo] = useState({
-    cardNumber: "",
-    cardName: "",
-    expiryDate: "",
-    cvv: ""
   });
 
   useEffect(() => {
@@ -135,51 +129,91 @@ export default function PaymentPage() {
       return;
     }
 
-    // Validate payment method
-    if (paymentMethod === "card") {
-      if (!cardInfo.cardNumber || !cardInfo.cardName || !cardInfo.expiryDate || !cardInfo.cvv) {
-        toast.error("Please fill in all card information");
-        return;
-      }
-    }
-
     setIsProcessing(true);
 
     try {
+      // Get restaurantId from cart items (all items should be from same restaurant)
+      const restaurantId = cartItems[0]?.restaurantId;
+      
+      if (!restaurantId) {
+        toast.error("Invalid cart items. Please try again.");
+        setIsProcessing(false);
+        return;
+      }
+
+      // Map payment method to backend format
+      let backendPaymentMethod = paymentMethod;
+      if (paymentMethod === 'momo') {
+        backendPaymentMethod = 'MOMO';
+      } else if (paymentMethod === 'cash') {
+        backendPaymentMethod = 'CASH';
+      }
+
       // Prepare order data
       const orderData = {
         userId: user.id,
-        items: cartItems.map(item => ({
-          productId: parseInt(item.id),
-          quantity: item.quantity
-        })),
+        restaurantId: restaurantId,
+        items: cartItems.map(item => {
+          const productId = parseInt(item.id);
+          if (isNaN(productId) || productId <= 0) {
+            throw new Error(`Invalid product ID: ${item.id}`);
+          }
+          return {
+            productId: productId,
+            quantity: item.quantity
+          };
+        }),
         deliveryInfo: deliveryInfo,
-        paymentMethod: paymentMethod,
+        paymentMethod: backendPaymentMethod,
         subtotal: subtotal,
         tax: tax,
         deliveryFee: DELIVERY_FEE,
         totalPrice: total
       };
 
-      console.log('Creating order with data:', orderData); // Debug log
-
       // Create order via API
       const response = await orderService.createOrder(orderData);
 
-      console.log('Order response:', response); // Debug log
-
       setOrderId(response.id);
-      setOrderResponse(response); // Lưu full response
-      setShowSuccessDialog(true);
-      clearCart();
+      setOrderResponse(response);
 
-      // Show success/failed based on payment status
-      if (response.paymentStatus === 'SUCCESS') {
-        toast.success("Order placed and payment successful!");
-      } else if (response.paymentStatus === 'FAILED') {
-        toast.error("Order created but payment failed. Please contact support.");
-      } else {
-        toast.success("Order placed successfully!");
+      // Xử lý theo payment method
+      if (paymentMethod === 'momo') {
+        // Lấy payment info để có momoPayUrl
+        try {
+          const paymentUrl = apiConfig.getPaymentServiceUrl(`/payments/order/${response.id}`);
+          const paymentResponse = await fetch(paymentUrl);
+          if (!paymentResponse.ok) {
+            throw new Error('Failed to get payment info');
+          }
+          const paymentData = await paymentResponse.json();
+          
+          // Kiểm tra có momoPayUrl không
+          if (paymentData.momoPayUrl) {
+            // Lưu orderId vào localStorage để check sau khi redirect về
+            localStorage.setItem('pendingOrderId', response.id);
+            localStorage.setItem('pendingPaymentOrderId', paymentData.momoOrderId);
+            
+            // Clear cart trước khi redirect
+            clearCart();
+            
+            // Redirect đến MoMo payment page
+            window.location.href = paymentData.momoPayUrl;
+            return; // Stop execution
+          } else {
+            throw new Error('MoMo payment URL not available');
+          }
+        } catch (error) {
+          console.error('Error getting MoMo payment URL:', error);
+          toast.error('Failed to initiate MoMo payment. Please try again.');
+          setIsProcessing(false);
+          return;
+        }
+      } else if (paymentMethod === 'cash') {
+        // Cash on delivery - show success immediately
+        clearCart();
+        setShowSuccessDialog(true);
+        toast.success("Order placed successfully! Pay on delivery.");
       }
     } catch (error) {
       console.error("Error creating order:", error);
@@ -302,18 +336,11 @@ export default function PaymentPage() {
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                      <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex items-center gap-2 cursor-pointer flex-1">
-                        <CreditCard className="w-5 h-5" />
-                        Credit/Debit Card
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                      <RadioGroupItem value="wallet" id="wallet" />
-                      <Label htmlFor="wallet" className="flex items-center gap-2 cursor-pointer flex-1">
-                        <Wallet className="w-5 h-5" />
-                        Digital Wallet
+                      <RadioGroupItem value="momo" id="momo" />
+                      <Label htmlFor="momo" className="flex items-center gap-2 cursor-pointer flex-1">
+                        <Wallet className="w-5 h-5 text-pink-600" />
+                        <span>MoMo E-Wallet</span>
+                        <span className="ml-auto text-xs text-pink-600 font-semibold">Recommended</span>
                       </Label>
                     </div>
 
@@ -327,48 +354,34 @@ export default function PaymentPage() {
                   </div>
                 </RadioGroup>
 
-                {paymentMethod === "card" && (
-                  <div className="mt-6 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cardNumber">Card Number *</Label>
-                      <Input
-                        id="cardNumber"
-                        placeholder="1234 5678 9012 3456"
-                        value={cardInfo.cardNumber}
-                        onChange={(e) => setCardInfo({...cardInfo, cardNumber: e.target.value})}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="cardName">Cardholder Name *</Label>
-                      <Input
-                        id="cardName"
-                        placeholder="John Doe"
-                        value={cardInfo.cardName}
-                        onChange={(e) => setCardInfo({...cardInfo, cardName: e.target.value})}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="expiry">Expiry Date *</Label>
-                        <Input
-                          id="expiry"
-                          placeholder="MM/YY"
-                          value={cardInfo.expiryDate}
-                          onChange={(e) => setCardInfo({...cardInfo, expiryDate: e.target.value})}
-                        />
+                {paymentMethod === "momo" && (
+                  <div className="mt-6 p-4 bg-pink-50 border border-pink-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <Wallet className="w-5 h-5 text-pink-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-1">Pay with MoMo</h4>
+                        <p className="text-sm text-gray-600 mb-2">
+                          You will be redirected to MoMo payment gateway to complete your payment securely.
+                        </p>
+                        <ul className="text-sm text-gray-600 space-y-1">
+                          <li>• Fast and secure payment</li>
+                          <li>• Instant confirmation</li>
+                          <li>• Multiple payment options in MoMo app</li>
+                        </ul>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="cvv">CVV *</Label>
-                        <Input
-                          id="cvv"
-                          placeholder="123"
-                          type="password"
-                          maxLength="3"
-                          value={cardInfo.cvv}
-                          onChange={(e) => setCardInfo({...cardInfo, cvv: e.target.value})}
-                        />
+                    </div>
+                  </div>
+                )}
+
+                {paymentMethod === "cash" && (
+                  <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <Banknote className="w-5 h-5 text-yellow-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-1">Cash on Delivery</h4>
+                        <p className="text-sm text-gray-600">
+                          Pay with cash when your order is delivered. Please prepare exact amount if possible.
+                        </p>
                       </div>
                     </div>
                   </div>

@@ -226,7 +226,7 @@ services:
       - microservices-network
     restart: unless-stopped
 
-  # Product Service
+  # Product Service (Restaurant Management)
   product-service:
     build: ./product-service
     container_name: product-service
@@ -238,6 +238,10 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=08102004
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=admin
+      - RABBITMQ_PASSWORD=admin123
       - LOGSTASH_HOST=logstash:5000
       - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
     depends_on:
@@ -245,6 +249,8 @@ services:
         condition: service_healthy
       eureka-service:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started
     networks:
       - microservices-network
     restart: unless-stopped
@@ -261,6 +267,10 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=08102004
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=admin
+      - RABBITMQ_PASSWORD=admin123
       - LOGSTASH_HOST=logstash:5000
       - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
     depends_on:
@@ -268,13 +278,17 @@ services:
         condition: service_healthy
       eureka-service:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started
     networks:
       - microservices-network
     restart: unless-stopped
 
   # Payment Service
   payment-service:
-    build: ./payment-service
+    build:
+      context: .
+      dockerfile: ./payment-service/Dockerfile
     container_name: payment-service
     ports:
       - "8084:8084"
@@ -284,6 +298,10 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=08102004
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=admin
+      - RABBITMQ_PASSWORD=admin123
       - LOGSTASH_HOST=logstash:5000
       - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
     depends_on:
@@ -291,6 +309,37 @@ services:
         condition: service_healthy
       eureka-service:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Delivery Service (Drone Delivery)
+  delivery-service:
+    build: ./delivery-service
+    container_name: delivery-service
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/delivery_service?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=08102004
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=admin
+      - RABBITMQ_PASSWORD=admin123
+      - LOGSTASH_HOST=logstash:5000
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
     networks:
       - microservices-network
     restart: unless-stopped

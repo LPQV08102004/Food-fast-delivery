@@ -4,10 +4,10 @@ server:
 
 spring:
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: admin
-    password: admin123
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:admin}
+    password: ${RABBITMQ_PASSWORD:admin123}
 
 #spring:
 #  datasource:

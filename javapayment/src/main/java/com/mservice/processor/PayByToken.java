@@ -41,10 +41,10 @@ public class PayByToken extends AbstractProcess<PaymentTokenRequest, PaymentResp
             HttpResponse response = execute.sendToMoMo(environment.getMomoEndpoint().getTokenPayUrl(), payload);
 
             if (response.getStatus() != 200) {
-                throw new MoMoException("[PaymentResponse] [" + request.getOrderId() + "] -> Error API");
+                throw new MoMoException("[PayByTokenResponse] [" + request.getOrderId() + "] -> Error API");
             }
 
-            System.out.println("uweryei7rye8wyreow8: "+ response.getData());
+            LogUtils.debug("[PayByTokenResponse] MoMo response data: " + response.getData());
 
             PaymentResponse paymentResponse = getGson().fromJson(response.getData(), PaymentResponse.class);
             String responserawData = Parameter.REQUEST_ID + "=" + paymentResponse.getRequestId() +
