@@ -180,14 +180,64 @@ export default function PaymentPage() {
       // Xử lý theo payment method
       if (paymentMethod === 'momo') {
         // Lấy payment info để có momoPayUrl qua paymentService
+        // Sử dụng polling vì payment được tạo bất đồng bộ qua RabbitMQ
         try {
-          console.log('Fetching payment info for order:', response.id);
-          const paymentData = await paymentService.getPaymentByOrderId(response.id);
+          console.log('Waiting for payment to be created for order:', response.id);
           
-          console.log('Payment data received:', paymentData);
+          // Polling: Thử gọi nhiều lần với delay
+          const maxAttempts = 20; // Tối đa 20 lần
+          const delayMs = 1000; // Delay 1000ms giữa mỗi lần (tổng 20 giây)
           
-          // Kiểm tra có momoPayUrl không
-          if (paymentData.momoPayUrl) {
+          let paymentData = null;
+          let attempt = 0;
+          
+          while (attempt < maxAttempts) {
+            attempt++;
+            console.log(`Attempt ${attempt}/${maxAttempts} - Fetching payment info...`);
+            
+            try {
+              paymentData = await paymentService.getPaymentByOrderId(response.id);
+              
+              // Nếu lấy được payment và có momoPayUrl, break khỏi loop
+              if (paymentData && paymentData.momoPayUrl) {
+                console.log('Payment data received:', paymentData);
+                break;
+              }
+              
+              // Nếu có payment nhưng chưa có URL, đợi thêm
+              if (paymentData && !paymentData.momoPayUrl) {
+                console.log('Payment found but momoPayUrl not ready yet, waiting...');
+              }
+            } catch (error) {
+              // Debug: Log full error structure
+              console.log('Error structure:', {
+                message: error.message,
+                status: error.status,
+                responseStatus: error.response?.status,
+                responseData: error.response?.data
+              });
+              
+              // Nếu 404, payment chưa được tạo, đợi thêm
+              const is404 = error.response?.status === 404 || 
+                           error.status === 404 || 
+                           error.message?.includes('404');
+              
+              if (is404) {
+                console.log('Payment not found yet (404), waiting...');
+              } else {
+                // Lỗi khác vẫn tiếp tục polling thay vì throw
+                console.warn('Non-404 error, but continuing polling:', error.message);
+              }
+            }
+            
+            // Đợi trước khi thử lại
+            if (attempt < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+          }
+          
+          // Kiểm tra có momoPayUrl không sau khi polling
+          if (paymentData && paymentData.momoPayUrl) {
             // Lưu orderId vào localStorage để check sau khi redirect về
             localStorage.setItem('pendingOrderId', response.id);
             localStorage.setItem('pendingPaymentOrderId', paymentData.momoOrderId);
@@ -200,12 +250,12 @@ export default function PaymentPage() {
             window.location.href = paymentData.momoPayUrl;
             return; // Stop execution
           } else {
-            console.error('MoMo payment URL not available in response:', paymentData);
-            throw new Error('MoMo payment URL not available');
+            console.error('MoMo payment URL not available after polling');
+            throw new Error('Payment processing timeout. Please check your order status in Orders page.');
           }
         } catch (error) {
           console.error('Error getting MoMo payment URL:', error);
-          toast.error(error.message || 'Failed to initiate MoMo payment. Please try again.');
+          toast.error(error.message || 'Failed to initiate MoMo payment. Please check your orders page.');
           setIsProcessing(false);
           return;
         }

@@ -40,6 +40,12 @@ public class UserController {
         return ResponseEntity.ok(userService.updateProfile(token, userDTO));
     }
 
+    // Admin: Tạo user mới
+    @PostMapping
+    public ResponseEntity<UserDTO> createUser(@RequestBody UserDTO userDTO) {
+        return ResponseEntity.ok(userService.createUser(userDTO));
+    }
+
     // Admin: Cập nhật user
     @PutMapping("/{id}")
     public ResponseEntity<UserDTO> updateUser(

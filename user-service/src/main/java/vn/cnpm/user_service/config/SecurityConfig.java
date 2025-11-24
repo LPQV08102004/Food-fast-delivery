@@ -22,12 +22,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // TẮT CORS ở đây vì Gateway đã xử lý CORS
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/users/**").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()  // Allow Prometheus to scrape metrics
+                        .requestMatchers("/api/auth/**", "/actuator/**").permitAll()
+                        .requestMatchers("/api/users").hasAuthority("ADMIN")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

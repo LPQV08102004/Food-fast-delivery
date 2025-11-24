@@ -574,6 +574,7 @@ function UserScreen() {
               >
                 <option value="USER">USER</option>
                 <option value="ADMIN">ADMIN</option>
+                <option value="RESTAURANT">RESTAURANT</option>
               </select>
             </div>
             <div>
@@ -1802,10 +1803,28 @@ function ProductScreen() {
 }
 
 // Restaurant List Screen
-function RestaurantListScreen() {
+function RestaurantListScreen({ autoOpenRegister = false }) {
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Add Restaurant Dialog (Register with User Account)
+  const [addDialogOpen, setAddDialogOpen] = useState(autoOpenRegister);
+  const [newRestaurant, setNewRestaurant] = useState({
+    // User information
+    username: '',
+    email: '',
+    password: '',
+    phone: '',
+    role: 'RESTAURANT',
+    status: 'Active',
+    // Restaurant information
+    restaurantName: '',
+    address: '',
+    contact: '',
+    description: '',
+    cuisineType: ''
+  });
 
   // Edit Restaurant Dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -1910,6 +1929,75 @@ function RestaurantListScreen() {
     }
   };
 
+  const handleAddRestaurant = () => {
+    setNewRestaurant({
+      username: '',
+      email: '',
+      password: '',
+      phone: '',
+      role: 'RESTAURANT',
+      status: 'Active',
+      restaurantName: '',
+      address: '',
+      contact: '',
+      description: '',
+      cuisineType: ''
+    });
+    setAddDialogOpen(true);
+  };
+
+  const handleRegisterRestaurant = async () => {
+    // Validate required fields
+    if (!newRestaurant.username || !newRestaurant.email || !newRestaurant.password) {
+      toast.error('Please fill in all user account fields (username, email, password)');
+      return;
+    }
+
+    if (!newRestaurant.restaurantName || !newRestaurant.address) {
+      toast.error('Please fill in required restaurant fields (name, address)');
+      return;
+    }
+
+    if (newRestaurant.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      // Step 1: Create user account with RESTAURANT role
+      const userResponse = await adminService.createUser({
+        username: newRestaurant.username,
+        email: newRestaurant.email,
+        password: newRestaurant.password,
+        phone: newRestaurant.phone,
+        role: 'RESTAURANT',
+        status: newRestaurant.status
+      });
+
+      console.log('User created:', userResponse);
+
+      // Step 2: Create restaurant with userId mapping
+      const restaurantResponse = await adminService.createRestaurant({
+        name: newRestaurant.restaurantName,
+        address: newRestaurant.address,
+        contact: newRestaurant.contact || newRestaurant.phone,
+        description: newRestaurant.description,
+        cuisineType: newRestaurant.cuisineType,
+        userId: userResponse.id || userResponse.userId, // Map to user account
+        status: 'Active'
+      });
+
+      console.log('Restaurant created:', restaurantResponse);
+
+      toast.success('Restaurant and user account registered successfully!');
+      setAddDialogOpen(false);
+      fetchRestaurants();
+    } catch (error) {
+      console.error('Error registering restaurant:', error);
+      toast.error(error.message || 'Failed to register restaurant. Please try again.');
+    }
+  };
+
   const filteredRestaurants = restaurants.filter(restaurant =>
     restaurant.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     restaurant.address?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1929,7 +2017,7 @@ function RestaurantListScreen() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleAddRestaurant}>
             <Plus className="w-4 h-4 mr-2" />
             Add Restaurant
           </Button>
@@ -2019,6 +2107,178 @@ function RestaurantListScreen() {
           </Table>
         </div>
       )}
+
+      {/* Add Restaurant Dialog - Register with User Account */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Register New Restaurant</DialogTitle>
+            <p className="text-sm text-gray-500 mt-2">
+              Create a user account and restaurant profile. The restaurant will be linked to this user account.
+            </p>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* User Account Information */}
+            <div className="border-b pb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">User Account Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Username <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    value={newRestaurant.username}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, username: e.target.value})}
+                    placeholder="Enter username for restaurant owner"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="email"
+                    value={newRestaurant.email}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, email: e.target.value})}
+                    placeholder="Enter email address"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Password <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="password"
+                    value={newRestaurant.password}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, password: e.target.value})}
+                    placeholder="Enter password (min 6 characters)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <Input
+                    value={newRestaurant.phone}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, phone: e.target.value})}
+                    placeholder="Enter phone number"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Account Status
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newRestaurant.status}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, status: e.target.value})}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Role
+                  </label>
+                  <Input
+                    value="RESTAURANT"
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Restaurant Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Restaurant Information</h3>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Restaurant Name <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    value={newRestaurant.restaurantName}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, restaurantName: e.target.value})}
+                    placeholder="Enter restaurant name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Address <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    value={newRestaurant.address}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, address: e.target.value})}
+                    placeholder="Enter full restaurant address"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Contact Number
+                    </label>
+                    <Input
+                      value={newRestaurant.contact}
+                      onChange={(e) => setNewRestaurant({...newRestaurant, contact: e.target.value})}
+                      placeholder="Restaurant contact (optional)"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave empty to use user phone number</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cuisine Type
+                    </label>
+                    <Input
+                      value={newRestaurant.cuisineType}
+                      onChange={(e) => setNewRestaurant({...newRestaurant, cuisineType: e.target.value})}
+                      placeholder="e.g., Italian, Vietnamese, Chinese"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="3"
+                    value={newRestaurant.description}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, description: e.target.value})}
+                    placeholder="Enter restaurant description"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> This will create both a user account with RESTAURANT role and a restaurant profile. 
+                The restaurant will be linked to the user account via userId for authentication and management.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleRegisterRestaurant}>
+              Register Restaurant
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Restaurant Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -2156,59 +2416,6 @@ function RestaurantListScreen() {
   );
 }
 
-// Restaurant Register Screen
-function RestaurantRegisterScreen() {
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Register Restaurant</h1>
-      <Card>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Restaurant Name
-              </label>
-              <Input placeholder="Enter restaurant name" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contact Number
-              </label>
-              <Input placeholder="Enter contact number" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Address
-              </label>
-              <Input placeholder="Enter full address" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cuisine Type
-              </label>
-              <Input placeholder="e.g., Italian, Chinese, etc." />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <Input type="email" placeholder="restaurant@example.com" />
-            </div>
-          </div>
-          <div className="mt-6 flex gap-3">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              Register Restaurant
-            </Button>
-            <Button variant="outline">
-              Cancel
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 // Main Admin Page Component
 export default function AdminPage() {
   const [activeScreen, setActiveScreen] = useState('dashboard');
@@ -2226,7 +2433,7 @@ export default function AdminPage() {
       case 'restaurant-list':
         return <RestaurantListScreen />;
       case 'restaurant-register':
-        return <RestaurantRegisterScreen />;
+        return <RestaurantListScreen autoOpenRegister={true} />;
       case 'drone':
         return (
           <div className="p-8">

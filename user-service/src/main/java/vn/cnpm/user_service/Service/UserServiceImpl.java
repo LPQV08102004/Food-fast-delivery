@@ -66,6 +66,36 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserDTO createUser(UserDTO userDTO) {
+        // Check if username or email already exists
+        if (userRepository.findByUsername(userDTO.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+        if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        // Create new user
+        User user = new User();
+        user.setUsername(userDTO.getUsername());
+        user.setEmail(userDTO.getEmail());
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword())); // Encode password
+        // Set fullName - use username if not provided
+        user.setFullName(userDTO.getFullName() != null ? userDTO.getFullName() : userDTO.getUsername());
+        user.setPhone(userDTO.getPhone());
+        user.setStatus(userDTO.getStatus() != null ? userDTO.getStatus() : "Active");
+
+        // Set role
+        String roleName = userDTO.getRole() != null ? userDTO.getRole() : "USER";
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+        user.setRole(role);
+
+        User savedUser = userRepository.save(user);
+        return convertToDTO(savedUser);
+    }
+
+    @Override
     public UserDTO updateUser(Long id, UserDTO userDTO) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));

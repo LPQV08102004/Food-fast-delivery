@@ -83,10 +83,10 @@ const adminService = {
     }
   },
 
-  // Tạo user mới
+  // Tạo user mới (Admin only - uses POST /api/users)
   createUser: async (userData) => {
     try {
-      const response = await api.post('/auth/register', userData);
+      const response = await api.post('/users', userData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -224,6 +224,34 @@ const adminService = {
     try {
       const response = await api.get('/restaurants', { params });
       return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Đăng ký restaurant kèm tài khoản user
+  registerRestaurantWithUser: async (userData, restaurantData) => {
+    try {
+      // Step 1: Create user account using admin endpoint
+      const userResponse = await api.post('/users', {
+        username: userData.username,
+        email: userData.email,
+        password: userData.password,
+        phone: userData.phone,
+        role: 'RESTAURANT',
+        status: userData.status || 'Active'
+      });
+
+      // Step 2: Create restaurant linked to user
+      const restaurantResponse = await api.post('/restaurants', {
+        ...restaurantData,
+        userId: userResponse.data.id || userResponse.data.userId
+      });
+
+      return {
+        user: userResponse.data,
+        restaurant: restaurantResponse.data
+      };
     } catch (error) {
       throw error.response?.data || error.message;
     }

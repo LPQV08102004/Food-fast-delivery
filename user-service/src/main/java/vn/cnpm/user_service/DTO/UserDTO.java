@@ -13,6 +13,7 @@ public class UserDTO {
     private Long id;
     private String username;
     private String email;
+    private String password; // For creating user only, not returned in response
     private String fullName;
     private String phone;
     private String role;

@@ -9,6 +9,7 @@ public interface UserService {
     UserDTO getUserById(Long id);
     UserDTO getCurrentUserProfile(String token);
     UserDTO updateProfile(String token, UserDTO userDTO);
+    UserDTO createUser(UserDTO userDTO); // Admin creates user
     UserDTO updateUser(Long id, UserDTO userDTO);
     void deleteUser(Long id);
     UserDTO toggleUserStatus(Long id, String status);
