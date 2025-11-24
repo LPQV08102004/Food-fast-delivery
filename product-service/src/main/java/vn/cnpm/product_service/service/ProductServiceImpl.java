@@ -13,6 +13,7 @@ import vn.cnpm.product_service.models.Restaurant;
 import vn.cnpm.product_service.repository.CategoryRepository;
 import vn.cnpm.product_service.repository.ProductRepository;
 import vn.cnpm.product_service.repository.RestaurantRepository;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -92,37 +93,40 @@ public class ProductServiceImpl implements ProductService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        Restaurant restaurant = null;
-        if (request.getRestaurantId() != null) {
-            restaurant = restaurantRepository.findById(request.getRestaurantId())
-                    .orElseThrow(() -> new RuntimeException("Restaurant not found"));
-        }
+        // Restaurant của sản phẩm không được thay đổi khi update
+        // Giữ nguyên restaurant hiện tại
 
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         product.setStock(request.getStock());
         product.setCategory(category);
-        product.setRestaurant(restaurant);
+        // Không update restaurant - giữ nguyên
         if (request.getIsActive() != null) {
             product.setIsActive(request.getIsActive());
         }
         
         // Cập nhật ảnh sản phẩm nếu có
         if (request.getImageUrls() != null) {
-            // Xóa ảnh cũ
-            if (product.getImages() != null) {
+            // Xóa ảnh cũ nếu có
+            if (product.getImages() != null && !product.getImages().isEmpty()) {
                 product.getImages().clear();
             }
-            // Thêm ảnh mới
+            
+            // Thêm ảnh mới nếu có
             if (!request.getImageUrls().isEmpty()) {
-                List<Product_image> images = request.getImageUrls().stream()
+                List<Product_image> newImages = request.getImageUrls().stream()
                         .map(url -> Product_image.builder()
                                 .imageUrl(url)
                                 .product(product)
                                 .build())
                         .collect(Collectors.toList());
-                product.setImages(images);
+                
+                // Sử dụng addAll thay vì setImages
+                if (product.getImages() == null) {
+                    product.setImages(new ArrayList<>());
+                }
+                product.getImages().addAll(newImages);
             }
         }
         

@@ -3,6 +3,7 @@ import { Plus, Search, Loader2 } from 'lucide-react';
 import restaurantService from '../../services/restaurantService';
 import { toast } from 'sonner';
 import { AddProductModal } from './AddProductModal';
+import { ProductDetailModal } from './ProductDetailModal';
 
 export function ProductScreen({ restaurantId = 1 }) {
   const [products, setProducts] = useState([]);
@@ -10,6 +11,8 @@ export function ProductScreen({ restaurantId = 1 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -63,6 +66,16 @@ export function ProductScreen({ restaurantId = 1 }) {
       console.error('Error deleting product:', error);
       toast.error('Không thể xóa sản phẩm');
     }
+  };
+
+  const handleViewDetail = (productId) => {
+    setSelectedProductId(productId);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedProductId(null);
   };
 
   const formatPrice = (price) => {
@@ -175,7 +188,7 @@ export function ProductScreen({ restaurantId = 1 }) {
                     </td>
                     <td className="py-3 px-4">
                       <button 
-                        onClick={() => toast.info('Chức năng xem chi tiết đang phát triển')}
+                        onClick={() => handleViewDetail(product.id)}
                         className="text-blue-600 hover:underline"
                       >
                         detail
@@ -203,6 +216,15 @@ export function ProductScreen({ restaurantId = 1 }) {
         onClose={() => setIsAddModalOpen(false)}
         restaurantId={restaurantId}
         onProductAdded={reloadProducts}
+      />
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        productId={selectedProductId}
+        restaurantId={restaurantId}
+        onProductUpdated={reloadProducts}
       />
     </div>
   );
