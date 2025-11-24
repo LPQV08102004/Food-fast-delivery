@@ -657,6 +657,7 @@ function UserScreen() {
               >
                 <option value="USER">USER</option>
                 <option value="ADMIN">ADMIN</option>
+                <option value="RESTAURANT">RESTAURANT</option>
               </select>
             </div>
             <div>
