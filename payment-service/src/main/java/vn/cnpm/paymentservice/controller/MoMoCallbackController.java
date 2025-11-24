@@ -11,7 +11,7 @@ import vn.cnpm.paymentservice.repository.PaymentRepository;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/payments/momo")
+@RequestMapping("/payments/momo")
 @RequiredArgsConstructor
 @Slf4j
 public class MoMoCallbackController {

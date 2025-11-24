@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 import { useCart } from "../contexts/CartContext";
 import authService from "../services/authService";
 import orderService from "../services/orderService";
-import apiConfig from "../config/apiConfig";
+import paymentService from "../services/paymentService";
 
 const DELIVERY_FEE = 3.5;
 const TAX_RATE = 0.1;
@@ -179,14 +179,12 @@ export default function PaymentPage() {
 
       // Xử lý theo payment method
       if (paymentMethod === 'momo') {
-        // Lấy payment info để có momoPayUrl
+        // Lấy payment info để có momoPayUrl qua paymentService
         try {
-          const paymentUrl = apiConfig.getPaymentServiceUrl(`/payments/order/${response.id}`);
-          const paymentResponse = await fetch(paymentUrl);
-          if (!paymentResponse.ok) {
-            throw new Error('Failed to get payment info');
-          }
-          const paymentData = await paymentResponse.json();
+          console.log('Fetching payment info for order:', response.id);
+          const paymentData = await paymentService.getPaymentByOrderId(response.id);
+          
+          console.log('Payment data received:', paymentData);
           
           // Kiểm tra có momoPayUrl không
           if (paymentData.momoPayUrl) {
@@ -197,15 +195,17 @@ export default function PaymentPage() {
             // Clear cart trước khi redirect
             clearCart();
             
+            console.log('Redirecting to MoMo:', paymentData.momoPayUrl);
             // Redirect đến MoMo payment page
             window.location.href = paymentData.momoPayUrl;
             return; // Stop execution
           } else {
+            console.error('MoMo payment URL not available in response:', paymentData);
             throw new Error('MoMo payment URL not available');
           }
         } catch (error) {
           console.error('Error getting MoMo payment URL:', error);
-          toast.error('Failed to initiate MoMo payment. Please try again.');
+          toast.error(error.message || 'Failed to initiate MoMo payment. Please try again.');
           setIsProcessing(false);
           return;
         }

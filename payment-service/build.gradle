@@ -68,6 +68,10 @@ dependencies {
     // Dependencies required by MoMo SDK
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+    
+    // Log4j for MoMo SDK (required by MoMo SDK LogUtils)
+    implementation 'org.slf4j:log4j-over-slf4j:2.0.9'
+    implementation 'log4j:log4j:1.2.17'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j:8.0.33'

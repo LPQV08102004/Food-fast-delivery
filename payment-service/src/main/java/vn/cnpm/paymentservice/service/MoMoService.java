@@ -4,11 +4,13 @@ import com.mservice.config.Environment;
 import com.mservice.enums.RequestType;
 import com.mservice.models.PaymentResponse;
 import com.mservice.processor.CreateOrderMoMo;
+import com.mservice.shared.utils.LogUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.cnpm.paymentservice.config.MoMoConfig;
 
+import jakarta.annotation.PostConstruct;
 import java.util.UUID;
 
 @Service
@@ -18,6 +20,13 @@ public class MoMoService {
 
     private final Environment momoEnvironment;
     private final MoMoConfig momoConfig;
+
+    @PostConstruct
+    public void init() {
+        // Initialize MoMo SDK Logger
+        LogUtils.init();
+        log.info("MoMo SDK Logger initialized successfully");
+    }
 
     /**
      * Tạo đơn hàng thanh toán MoMo

@@ -291,7 +291,7 @@ services:
       dockerfile: ./payment-service/Dockerfile
     container_name: payment-service
     ports:
-      - "8084:8084"
+      - "0.0.0.0:8084:8084"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/payment_service?createDatabaseIfNotExist=true

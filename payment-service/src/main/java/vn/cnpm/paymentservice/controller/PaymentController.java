@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/payments")
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentController {
