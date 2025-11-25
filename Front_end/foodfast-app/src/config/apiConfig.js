@@ -7,6 +7,7 @@ const hostname = window.location.hostname;
 // Determine API base URLs based on environment
 let API_GATEWAY_URL;
 let PAYMENT_SERVICE_URL;
+let DELIVERY_SERVICE_URL;
 
 if (process.env.REACT_APP_API_GATEWAY_URL) {
   // Use environment variable if provided
@@ -28,9 +29,19 @@ if (process.env.REACT_APP_PAYMENT_SERVICE_URL) {
   PAYMENT_SERVICE_URL = `http://${hostname}:8084/api`;
 }
 
+if (process.env.REACT_APP_DELIVERY_SERVICE_URL) {
+  DELIVERY_SERVICE_URL = process.env.REACT_APP_DELIVERY_SERVICE_URL;
+} else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+  DELIVERY_SERVICE_URL = 'http://localhost:8086/api';
+} else {
+  // LAN or production - use same hostname
+  DELIVERY_SERVICE_URL = `http://${hostname}:8086/api`;
+}
+
 const config = {
   API_GATEWAY_URL,
   PAYMENT_SERVICE_URL,
+  DELIVERY_SERVICE_URL,
   
   // Helper function to get payment service URL
   getPaymentServiceUrl: (path = '') => {
@@ -40,6 +51,11 @@ const config = {
   // Helper function to get API gateway URL
   getApiGatewayUrl: (path = '') => {
     return `${API_GATEWAY_URL}${path}`;
+  },
+
+  // Helper function to get delivery service URL
+  getDeliveryServiceUrl: (path = '') => {
+    return `${DELIVERY_SERVICE_URL}${path}`;
   },
 };
 

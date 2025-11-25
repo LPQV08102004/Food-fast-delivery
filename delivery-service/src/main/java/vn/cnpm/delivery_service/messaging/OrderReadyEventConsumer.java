@@ -54,8 +54,8 @@ public class OrderReadyEventConsumer {
 
             CompletableFuture.runAsync(() -> {
                 try {
-                    // Giả lập: Drone bay đến nhà hàng (3 giây)
-                    Thread.sleep(3000);
+                    // Giả lập: Drone bay đến nhà hàng (5 giây)
+                    Thread.sleep(5000);
                     log.info("Drone {} arriving at restaurant for order {}", droneId, orderId);
                     
                     // Drone lấy hàng
@@ -70,12 +70,12 @@ public class OrderReadyEventConsumer {
                     eventPublisher.publishOrderPickedUpEvent(pickedUpEvent);
 
                     // Giả lập: Bắt đầu giao hàng
-                    Thread.sleep(2000);
+                    Thread.sleep(3000);
                     droneService.startDelivery(deliveryId);
                     log.info("Drone {} started delivering order {}", droneId, orderId);
 
-                    // Giả lập: Giao hàng thành công (5 giây)
-                    Thread.sleep(5000);
+                    // Giả lập: Giao hàng thành công (30 giây - drone đang bay đến khách hàng)
+                    Thread.sleep(30000);
                     droneService.completeDelivery(deliveryId);
                     log.info("Drone {} completed delivery for order {}", droneId, orderId);
 

@@ -16,7 +16,8 @@ import {
   MapPin,
   Phone,
   Calendar,
-  X
+  X,
+  Plane
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -41,6 +42,7 @@ import {
 import { toast, Toaster } from 'sonner';
 import authService from '../services/authService';
 import orderService from '../services/orderService';
+import deliveryService from '../services/deliveryService';
 
 const getStatusColor = (status) => {
   const colors = {
@@ -130,6 +132,8 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
+  const [loadingDelivery, setLoadingDelivery] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -186,8 +190,30 @@ export default function OrdersPage() {
     fetchOrders();
   }, [navigate, fetchOrders]);
 
-  const handleViewDetails = (order) => {
+  const handleViewDetails = async (order) => {
     setSelectedOrder(order);
+    
+    // Fetch delivery info if order is PREPARING, DELIVERING, or DELIVERED
+    if (['PREPARING', 'DELIVERING', 'DELIVERED'].includes(order.status)) {
+      setLoadingDelivery(true);
+      try {
+        const delivery = await deliveryService.getDeliveryByOrderId(order.id);
+        setDeliveryInfo(delivery);
+      } catch (error) {
+        console.error('Error fetching delivery info:', error);
+        // Không hiển thị error nếu chưa có delivery info
+        setDeliveryInfo(null);
+      } finally {
+        setLoadingDelivery(false);
+      }
+    } else {
+      setDeliveryInfo(null);
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedOrder(null);
+    setDeliveryInfo(null);
   };
 
   const handleLogout = () => {
@@ -336,8 +362,8 @@ export default function OrdersPage() {
 
         {/* Order Details Dialog */}
         {selectedOrder && (
-          <Dialog open={Boolean(selectedOrder)} onOpenChange={() => setSelectedOrder(null)}>
-            <DialogContent className="max-w-2xl p-6 mx-auto rounded-lg shadow-lg bg-white">
+          <Dialog open={Boolean(selectedOrder)} onOpenChange={handleCloseDialog}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6 mx-auto rounded-lg shadow-lg bg-white">
               <DialogHeader>
                 <div className="flex items-center justify-between">
                   <DialogTitle className="text-lg font-bold text-gray-900">
@@ -345,7 +371,7 @@ export default function OrdersPage() {
                   </DialogTitle>
                   <Button
                     variant="ghost"
-                    onClick={() => setSelectedOrder(null)}
+                    onClick={handleCloseDialog}
                     className="rounded-full p-2 hover:bg-gray-100"
                   >
                     <X className="w-5 h-5 text-gray-500" />
@@ -407,6 +433,89 @@ export default function OrdersPage() {
                         {selectedOrder.paymentStatus}
                       </Badge>
                     </div>
+                  )}
+
+                  {/* Thông tin Delivery & Drone */}
+                  {['PREPARING', 'DELIVERING', 'DELIVERED'].includes(selectedOrder.status) && (
+                    <>
+                      <Separator className="my-4" />
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Plane className="w-5 h-5 text-blue-600" />
+                          <span className="font-semibold text-blue-900">Delivery Information</span>
+                        </div>
+                        
+                        {loadingDelivery ? (
+                          <div className="text-center py-4">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-600"></div>
+                            <p className="text-gray-600 text-sm mt-2">Loading delivery info...</p>
+                          </div>
+                        ) : deliveryInfo ? (
+                          <div className="space-y-3">
+                            <div>
+                              <span className="block text-xs font-semibold text-gray-600">
+                                Drone ID
+                              </span>
+                              <span className="block text-sm font-medium text-gray-900">
+                                {deliveryInfo.droneId}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="block text-xs font-semibold text-gray-600">
+                                Delivery Status
+                              </span>
+                              <Badge className={deliveryService.getDeliveryStatusColor(deliveryInfo.status)}>
+                                {deliveryService.formatDeliveryStatus(deliveryInfo.status)}
+                              </Badge>
+                            </div>
+                            {deliveryInfo.assignedAt && (
+                              <div>
+                                <span className="block text-xs font-semibold text-gray-600">
+                                  Assigned At
+                                </span>
+                                <span className="block text-sm text-gray-900">
+                                  {new Date(deliveryInfo.assignedAt).toLocaleString()}
+                                </span>
+                              </div>
+                            )}
+                            {deliveryInfo.pickedUpAt && (
+                              <div>
+                                <span className="block text-xs font-semibold text-gray-600">
+                                  Picked Up At
+                                </span>
+                                <span className="block text-sm text-gray-900">
+                                  {new Date(deliveryInfo.pickedUpAt).toLocaleString()}
+                                </span>
+                              </div>
+                            )}
+                            {deliveryInfo.completedAt && (
+                              <div>
+                                <span className="block text-xs font-semibold text-gray-600">
+                                  Delivered At
+                                </span>
+                                <span className="block text-sm text-gray-900">
+                                  {new Date(deliveryInfo.completedAt).toLocaleString()}
+                                </span>
+                              </div>
+                            )}
+                            {deliveryInfo.deliveryAddress && (
+                              <div>
+                                <span className="block text-xs font-semibold text-gray-600">
+                                  Delivery Address
+                                </span>
+                                <span className="block text-sm text-gray-900">
+                                  {deliveryInfo.deliveryAddress}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-600">
+                            Delivery information will be available once the restaurant prepares your order.
+                          </p>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
 

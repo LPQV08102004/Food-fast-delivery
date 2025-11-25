@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import adminService from '../services/adminService';
 import restaurantService from '../services/restaurantService';
 import categoryService from '../services/categoryService';
+import deliveryService from '../services/deliveryService';
 
 
 // Sidebar Component
@@ -712,6 +713,8 @@ function OrderScreen() {
   // Order Detail Dialog
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
+  const [loadingDelivery, setLoadingDelivery] = useState(false);
 
   useEffect(() => {
     fetchAllData();
@@ -771,12 +774,35 @@ function OrderScreen() {
       const orderDetails = await adminService.getOrderDetails(order.id);
       setSelectedOrder(orderDetails);
       setDetailDialogOpen(true);
+      
+      // Fetch delivery info if order is PREPARING, DELIVERING, or DELIVERED
+      if (['PREPARING', 'DELIVERING', 'DELIVERED'].includes(orderDetails.status || order.status)) {
+        setLoadingDelivery(true);
+        try {
+          const delivery = await deliveryService.getDeliveryByOrderId(order.id);
+          setDeliveryInfo(delivery);
+        } catch (error) {
+          console.error('Error fetching delivery info:', error);
+          setDeliveryInfo(null);
+        } finally {
+          setLoadingDelivery(false);
+        }
+      } else {
+        setDeliveryInfo(null);
+      }
     } catch (error) {
       console.error('Error fetching order details:', error);
       // Fallback to showing the order data we already have
       setSelectedOrder(order);
       setDetailDialogOpen(true);
+      setDeliveryInfo(null);
     }
+  };
+
+  const handleCloseDetailDialog = () => {
+    setDetailDialogOpen(false);
+    setSelectedOrder(null);
+    setDeliveryInfo(null);
   };
 
   const getStatusColor = (status) => {
@@ -1050,7 +1076,7 @@ function OrderScreen() {
       </Dialog>
 
       {/* Order Detail Dialog */}
-      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+      <Dialog open={detailDialogOpen} onOpenChange={(open) => !open && handleCloseDetailDialog()}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
@@ -1175,6 +1201,85 @@ function OrderScreen() {
                 </div>
               )}
 
+              {/* Delivery Information */}
+              {['PREPARING', 'DELIVERING', 'DELIVERED'].includes(selectedOrder.status) && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Plane className="w-5 h-5 text-blue-600" />
+                    Delivery Information
+                  </h3>
+                  {loadingDelivery ? (
+                    <div className="text-center py-4 bg-blue-50 rounded-lg">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-600"></div>
+                      <p className="text-gray-600 text-sm mt-2">Loading delivery info...</p>
+                    </div>
+                  ) : deliveryInfo ? (
+                    <div className="p-4 bg-blue-50 rounded-lg space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 mb-1">Drone ID</label>
+                          <p className="text-base font-semibold text-blue-900">{deliveryInfo.droneId}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 mb-1">Delivery Status</label>
+                          <Badge className={deliveryService.getDeliveryStatusColor(deliveryInfo.status)}>
+                            {deliveryService.formatDeliveryStatus(deliveryInfo.status)}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {deliveryInfo.assignedAt && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">Assigned At</label>
+                            <p className="text-sm text-gray-900">
+                              {new Date(deliveryInfo.assignedAt).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+                        {deliveryInfo.pickedUpAt && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">Picked Up At</label>
+                            <p className="text-sm text-gray-900">
+                              {new Date(deliveryInfo.pickedUpAt).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+                        {deliveryInfo.deliveringAt && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">Started Delivery At</label>
+                            <p className="text-sm text-gray-900">
+                              {new Date(deliveryInfo.deliveringAt).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+                        {deliveryInfo.completedAt && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">Delivered At</label>
+                            <p className="text-sm text-gray-900">
+                              {new Date(deliveryInfo.completedAt).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {deliveryInfo.currentLat && deliveryInfo.currentLng && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 mb-1">Current Location</label>
+                          <p className="text-sm text-gray-900">
+                            Lat: {deliveryInfo.currentLat.toFixed(6)}, Lng: {deliveryInfo.currentLng.toFixed(6)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        Delivery information will be available once a drone is assigned.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Notes */}
               {selectedOrder.notes && (
                 <div>
@@ -1185,7 +1290,7 @@ function OrderScreen() {
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => setDetailDialogOpen(false)}>Close</Button>
+            <Button onClick={handleCloseDetailDialog}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
