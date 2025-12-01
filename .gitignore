@@ -1,0 +1,24 @@
+# Environment variables - DO NOT commit this file
+.env
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Docker volumes
+**/data/
+**/logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+**/target/
+**/build/
+**/dist/
+**/out/
+
+# Node
+**/node_modules/

@@ -20,6 +20,13 @@ if (-not $ipAddress) {
 Write-Host "📡 Địa chỉ IP LAN của bạn: $ipAddress" -ForegroundColor Green
 Write-Host ""
 
+# Tạo file .env với IP tự động
+Write-Host "📝 Setting up LAN configuration..." -ForegroundColor Yellow
+$apiUrl = "http://${ipAddress}:8080/api"
+Set-Content -Path .env -Value "API_BASE_URL=$apiUrl"
+Write-Host "✅ Configuration set to LAN mode: $apiUrl" -ForegroundColor Green
+Write-Host ""
+
 # Kiểm tra Docker đang chạy
 Write-Host "🔍 Kiểm tra Docker..." -ForegroundColor Yellow
 try {
@@ -46,9 +53,15 @@ Write-Host "================================" -ForegroundColor Green
 Write-Host "✅ Khởi động thành công!" -ForegroundColor Green
 Write-Host "================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "📱 Truy cập ứng dụng:" -ForegroundColor Cyan
-Write-Host "   Frontend:        http://${ipAddress}:3000" -ForegroundColor White
-Write-Host "   API Gateway:     http://${ipAddress}:8080" -ForegroundColor White
+Write-Host "📱 Truy cập từ máy này:" -ForegroundColor Cyan
+Write-Host "   Frontend:        http://localhost:3000" -ForegroundColor White
+Write-Host "   API Gateway:     http://localhost:8080" -ForegroundColor White
+Write-Host ""
+Write-Host "🌐 Truy cập từ máy khác trong LAN:" -ForegroundColor Cyan
+Write-Host "   Frontend:        http://${ipAddress}:3000" -ForegroundColor Yellow
+Write-Host "   API Gateway:     http://${ipAddress}:8080" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "📊 Các công cụ monitoring:" -ForegroundColor Cyan
 Write-Host "   Eureka:          http://${ipAddress}:8761" -ForegroundColor White
 Write-Host "   RabbitMQ UI:     http://${ipAddress}:15672 (admin/admin123)" -ForegroundColor White
 Write-Host "   Grafana:         http://${ipAddress}:3001 (admin/admin123)" -ForegroundColor White

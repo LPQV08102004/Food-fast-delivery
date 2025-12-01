@@ -349,12 +349,12 @@ services:
     build:
       context: ./Front_end/foodfast-app
       args:
-        - REACT_APP_API_BASE_URL=http://26.174.141.27:8080/api
+        - REACT_APP_API_BASE_URL=${API_BASE_URL:-http://localhost:8080/api}
     container_name: frontend
     ports:
       - "0.0.0.0:3000:80"
     environment:
-      - REACT_APP_API_BASE_URL=http://26.174.141.27:8080/api
+      - REACT_APP_API_BASE_URL=${API_BASE_URL:-http://localhost:8080/api}
     depends_on:
       - api-gateway
     networks:
