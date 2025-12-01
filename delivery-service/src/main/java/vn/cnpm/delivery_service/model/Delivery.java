@@ -37,13 +37,15 @@ public class Delivery {
     private Instant deliveringAt;    // Khi bắt đầu giao
     private Instant completedAt;     // Khi hoàn thành
     
-    // Drone location tracking (giả lập)
+    // Drone location tracking & GPS info
     private Double currentLat;
     private Double currentLng;
-    private String notes;
+    private Double distanceRemaining;  // km còn lại
+    private Double currentSpeed;       // km/h hiện tại
+    private Instant estimatedArrival;  // ETA - dự kiến đến
 
     @PrePersist
-    public void prePersist() {
+    protected void onCreate() {
         createdAt = Instant.now();
         if (status == null) {
             status = DeliveryStatus.PENDING;

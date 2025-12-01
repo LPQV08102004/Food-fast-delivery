@@ -35,6 +35,17 @@ const deliveryService = {
     }
   },
 
+  // Lấy delivery info theo deliveryId
+  getDeliveryById: async (deliveryId) => {
+    try {
+      const response = await deliveryApi.get(`/deliveries/${deliveryId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching delivery by ID:', error);
+      throw error;
+    }
+  },
+
   // Lấy tất cả deliveries đang hoạt động
   getActiveDeliveries: async () => {
     try {

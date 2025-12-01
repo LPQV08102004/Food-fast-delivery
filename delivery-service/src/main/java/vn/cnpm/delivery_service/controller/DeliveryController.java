@@ -71,36 +71,36 @@ public class DeliveryController {
     }
 
     /**
-     * Thủ công đánh dấu drone đã lấy hàng (cho testing)
+     * Lấy thông tin GPS tracking chi tiết
+     * GET /api/deliveries/{deliveryId}/gps-tracking
      */
-    @PostMapping("/{deliveryId}/pickup")
-    public ResponseEntity<Delivery> markPickedUp(@PathVariable Long deliveryId) {
+    @GetMapping("/{deliveryId}/gps-tracking")
+    public ResponseEntity<?> getGpsTracking(@PathVariable Long deliveryId) {
         try {
-            Delivery updated = droneService.simulatePickup(deliveryId);
-            return ResponseEntity.ok(updated);
+            Delivery delivery = deliveryRepository.findById(deliveryId)
+                    .orElseThrow(() -> new RuntimeException("Delivery not found"));
+
+            java.util.Map<String, Object> tracking = new java.util.HashMap<>();
+            tracking.put("deliveryId", delivery.getId());
+            tracking.put("orderId", delivery.getOrderId());
+            tracking.put("droneId", delivery.getDroneId());
+            tracking.put("status", delivery.getStatus());
+            tracking.put("currentLocation", java.util.Map.of(
+                    "lat", delivery.getCurrentLat() != null ? delivery.getCurrentLat() : 0,
+                    "lng", delivery.getCurrentLng() != null ? delivery.getCurrentLng() : 0
+            ));
+            tracking.put("distanceRemaining", delivery.getDistanceRemaining());
+            tracking.put("currentSpeed", delivery.getCurrentSpeed());
+            tracking.put("estimatedArrival", delivery.getEstimatedArrival());
+            tracking.put("customerAddress", delivery.getDeliveryAddress());
+
+            return ResponseEntity.ok(tracking);
         } catch (Exception e) {
-            log.error("Failed to mark picked up", e);
+            log.error("Failed to get GPS tracking", e);
             return ResponseEntity.badRequest().build();
         }
     }
 
-    /**
-     * Thủ công bắt đầu giao hàng (cho testing)
-     */
-    @PostMapping("/{deliveryId}/start")
-    public ResponseEntity<Delivery> startDelivery(@PathVariable Long deliveryId) {
-        try {
-            Delivery updated = droneService.startDelivery(deliveryId);
-            return ResponseEntity.ok(updated);
-        } catch (Exception e) {
-            log.error("Failed to start delivery", e);
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /**
-     * Thủ công hoàn thành giao hàng (cho testing)
-     */
     @PostMapping("/{deliveryId}/complete")
     public ResponseEntity<Delivery> completeDelivery(@PathVariable Long deliveryId) {
         try {

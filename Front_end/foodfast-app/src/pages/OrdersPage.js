@@ -17,7 +17,8 @@ import {
   Phone,
   Calendar,
   X,
-  Plane
+  Plane,
+  Map
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -43,7 +44,8 @@ import { toast, Toaster } from 'sonner';
 import authService from '../services/authService';
 import orderService from '../services/orderService';
 import deliveryService from '../services/deliveryService';
-
+import DeliveryInfo from '../components/DeliveryInfo';
+import DroneMap from '../components/DroneMap';
 
 const getStatusColor = (status) => {
   const colors = {
@@ -135,6 +137,7 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [deliveryInfo, setDeliveryInfo] = useState(null);
   const [loadingDelivery, setLoadingDelivery] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -215,6 +218,7 @@ export default function OrdersPage() {
   const handleCloseDialog = () => {
     setSelectedOrder(null);
     setDeliveryInfo(null);
+    setShowMap(false);
   };
 
   const handleLogout = () => {
@@ -441,78 +445,30 @@ export default function OrdersPage() {
                     <>
                       <Separator className="my-4" />
                       <div className="bg-blue-50 p-4 rounded-lg">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Plane className="w-5 h-5 text-blue-600" />
-                          <span className="font-semibold text-blue-900">Delivery Information</span>
-                        </div>
-                        
                         {loadingDelivery ? (
                           <div className="text-center py-4">
                             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-600"></div>
-                            <p className="text-gray-600 text-sm mt-2">Loading delivery info...</p>
+                            <p className="text-gray-600 text-sm mt-2">Đang tải thông tin giao hàng...</p>
                           </div>
                         ) : deliveryInfo ? (
-                          <div className="space-y-3">
-                            <div>
-                              <span className="block text-xs font-semibold text-gray-600">
-                                Drone ID
-                              </span>
-                              <span className="block text-sm font-medium text-gray-900">
-                                {deliveryInfo.droneId}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="block text-xs font-semibold text-gray-600">
-                                Delivery Status
-                              </span>
-                              <Badge className={deliveryService.getDeliveryStatusColor(deliveryInfo.status)}>
-                                {deliveryService.formatDeliveryStatus(deliveryInfo.status)}
-                              </Badge>
-                            </div>
-                            {deliveryInfo.assignedAt && (
-                              <div>
-                                <span className="block text-xs font-semibold text-gray-600">
-                                  Assigned At
-                                </span>
-                                <span className="block text-sm text-gray-900">
-                                  {new Date(deliveryInfo.assignedAt).toLocaleString()}
-                                </span>
-                              </div>
+                          <>
+                            <DeliveryInfo delivery={deliveryInfo} />
+
+                            {/* Track on Map Button */}
+                            {((deliveryInfo.currentLat && deliveryInfo.currentLng) ||
+                              (deliveryInfo.current_lat && deliveryInfo.current_lng)) && (
+                              <button
+                                onClick={() => setShowMap(true)}
+                                className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                              >
+                                <Map className="w-5 h-5" />
+                                Theo dõi trên bản đồ
+                              </button>
                             )}
-                            {deliveryInfo.pickedUpAt && (
-                              <div>
-                                <span className="block text-xs font-semibold text-gray-600">
-                                  Picked Up At
-                                </span>
-                                <span className="block text-sm text-gray-900">
-                                  {new Date(deliveryInfo.pickedUpAt).toLocaleString()}
-                                </span>
-                              </div>
-                            )}
-                            {deliveryInfo.completedAt && (
-                              <div>
-                                <span className="block text-xs font-semibold text-gray-600">
-                                  Delivered At
-                                </span>
-                                <span className="block text-sm text-gray-900">
-                                  {new Date(deliveryInfo.completedAt).toLocaleString()}
-                                </span>
-                              </div>
-                            )}
-                            {deliveryInfo.deliveryAddress && (
-                              <div>
-                                <span className="block text-xs font-semibold text-gray-600">
-                                  Delivery Address
-                                </span>
-                                <span className="block text-sm text-gray-900">
-                                  {deliveryInfo.deliveryAddress}
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          </>
                         ) : (
-                          <p className="text-sm text-gray-600">
-                            Delivery information will be available once the restaurant prepares your order.
+                          <p className="text-sm text-gray-600 text-center">
+                            Thông tin giao hàng sẽ có sau khi nhà hàng chuẩn bị xong đơn hàng của bạn.
                           </p>
                         )}
                       </div>
@@ -548,6 +504,18 @@ export default function OrdersPage() {
               </DialogDescription>
             </DialogContent>
           </Dialog>
+        )}
+
+        {/* Drone Map Modal */}
+        {showMap && deliveryInfo && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 z-[9999] flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+              <DroneMap
+                delivery={deliveryInfo}
+                onClose={() => setShowMap(false)}
+              />
+            </div>
+          </div>
         )}
       </main>
     </div>

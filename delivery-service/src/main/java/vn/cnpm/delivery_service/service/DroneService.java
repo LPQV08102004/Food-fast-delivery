@@ -3,14 +3,15 @@ package vn.cnpm.delivery_service.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.cnpm.delivery_service.model.Delivery;
 import vn.cnpm.delivery_service.model.DeliveryStatus;
+import vn.cnpm.delivery_service.model.Drone;
 import vn.cnpm.delivery_service.repository.DeliveryRepository;
+import vn.cnpm.delivery_service.repository.DroneRepository;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Random;
-import java.util.UUID;
 
 /**
  * Service quản lý drone delivery
@@ -22,50 +23,51 @@ import java.util.UUID;
 public class DroneService {
 
     private final DeliveryRepository deliveryRepository;
-    private final Random random = new Random();
+    private final DroneRepository droneRepository;
 
     /**
-     * Tự động gán drone cho đơn hàng mới
+     * Tự động gán drone thông minh cho đơn hàng mới
+     * Tìm drone gần nhất, có pin đủ
      */
+    @Transactional
     public Delivery assignDrone(Delivery delivery) {
-        // Giả lập: Tạo ID drone ngẫu nhiên
         String droneId = "DRONE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        
-        delivery.setDroneId(droneId);
-        delivery.setStatus(DeliveryStatus.ASSIGNED);
-        delivery.setAssignedAt(Instant.now());
-        
-        log.info("Drone {} assigned to order {}", droneId, delivery.getOrderId());
-        
-        // Giả lập: Drone tự động bắt đầu bay đến nhà hàng
-        delivery.setStatus(DeliveryStatus.PICKING_UP);
-        
-        return deliveryRepository.save(delivery);
-    }
+        // Tìm drone sẵn sàng gần nhà hàng nhất
+        // Parse restaurant address to get approximate lat/lng (simplified)
+        Double restaurantLat = 10.7769; // Default HCM center
+        Double restaurantLng = 106.7009;
 
-    /**
-     * Giả lập drone đến nhà hàng và lấy món ăn
-     */
-    public Delivery simulatePickup(Long deliveryId) {
-        Delivery delivery = deliveryRepository.findById(deliveryId)
-                .orElseThrow(() -> new RuntimeException("Delivery not found"));
+        Optional<Drone> availableDrone = droneRepository.findNearestAvailableDrone(restaurantLat, restaurantLng);
 
-        if (delivery.getStatus() != DeliveryStatus.PICKING_UP) {
-            throw new RuntimeException("Delivery not in PICKING_UP status");
+        Drone drone;
+        if (availableDrone.isPresent()) {
+            drone = availableDrone.get();
+            log.info("Found available drone: {}", drone.getDroneCode());
+        } else {
+            // Fallback: Tìm bất kỳ drone available nào
+            List<Drone> availableDrones = droneRepository.findAvailableDrones();
+            if (!availableDrones.isEmpty()) {
+                drone = availableDrones.get(0);
+                log.info("Using fallback drone: {}", drone.getDroneCode());
+            } else {
+                log.error("No available drones found!");
+                throw new RuntimeException("No available drones at the moment. Please try again later.");
+            }
         }
 
-        delivery.setStatus(DeliveryStatus.PICKED_UP);
+        // Gán drone cho delivery
+        delivery.setDroneId(drone.getDroneCode());
         delivery.setPickedUpAt(Instant.now());
-        
-        log.info("Drone {} picked up order {} from restaurant", 
-                delivery.getDroneId(), delivery.getOrderId());
-        
-        return deliveryRepository.save(delivery);
-    }
 
-    /**
-     * Drone bắt đầu giao hàng đến khách
-     */
+        log.info("Drone {} picked up order {} from restaurant",
+        // Cập nhật trạng thái drone
+        drone.markAsBusy();
+        drone.updateLocation(restaurantLat, restaurantLng);
+        droneRepository.save(drone);
+
+        log.info("Drone {} assigned to order {}", drone.getDroneCode(), delivery.getOrderId());
+
+        // Tự động chuyển sang PICKING_UP
     public Delivery startDelivery(Long deliveryId) {
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new RuntimeException("Delivery not found"));
@@ -118,8 +120,9 @@ public class DroneService {
     }
 
     /**
-     * Theo dõi vị trí drone (giả lập)
+     * Cập nhật vị trí GPS của drone
      */
+    @Transactional
     public Delivery updateDroneLocation(Long deliveryId, Double lat, Double lng) {
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new RuntimeException("Delivery not found"));
@@ -130,3 +133,4 @@ public class DroneService {
         return deliveryRepository.save(delivery);
     }
 }
+
