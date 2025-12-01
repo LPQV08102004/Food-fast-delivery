@@ -29,6 +29,13 @@ public class OrderReadyEventConsumer {
             log.info("Received OrderReadyEvent for orderId: {} from restaurant {}",
                     event.getOrderId(), event.getRestaurantId());
 
+            // Kiểm tra xem delivery đã tồn tại chưa
+            var existingDelivery = deliveryRepository.findByOrderId(event.getOrderId());
+            if (existingDelivery.isPresent()) {
+                log.warn("Delivery already exists for orderId: {}. Skipping duplicate creation.", event.getOrderId());
+                return;
+            }
+
             // Tạo delivery record
             Delivery delivery = Delivery.builder()
                     .orderId(event.getOrderId())

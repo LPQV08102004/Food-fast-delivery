@@ -1,11 +1,41 @@
-import React, { useState } from 'react';
-import { X, User, MapPin, Phone, CreditCard, Package, Clock, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, User, MapPin, Phone, CreditCard, Package, Clock, CheckCircle, XCircle, Map, Plane } from 'lucide-react';
 import { toast } from 'sonner';
 import orderService from '../../services/orderService';
+import deliveryService from '../../services/deliveryService';
+import DeliveryInfo from '../DeliveryInfo';
+import DroneMap from '../DroneMap';
 
 export function OrderDetailModal({ order, isOpen, onClose, onOrderUpdated }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(order?.status || '');
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
+  const [loadingDelivery, setLoadingDelivery] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+
+  // Fetch delivery info when order changes
+  useEffect(() => {
+    if (order && ['PREPARING', 'READY', 'PICKED_UP', 'DELIVERING', 'DELIVERED'].includes(order.status)) {
+      fetchDeliveryInfo();
+    } else {
+      setDeliveryInfo(null);
+    }
+  }, [order]);
+
+  const fetchDeliveryInfo = async () => {
+    if (!order?.id) return;
+    
+    setLoadingDelivery(true);
+    try {
+      const delivery = await deliveryService.getDeliveryByOrderId(order.id);
+      setDeliveryInfo(delivery);
+    } catch (error) {
+      console.error('Error fetching delivery info:', error);
+      setDeliveryInfo(null);
+    } finally {
+      setLoadingDelivery(false);
+    }
+  };
 
   if (!isOpen || !order) return null;
 
@@ -81,6 +111,12 @@ export function OrderDetailModal({ order, isOpen, onClose, onOrderUpdated }) {
       setIsUpdating(true);
       await orderService.updateOrderStatus(order.id, selectedStatus);
       toast.success('Cập nhật trạng thái thành công!');
+      
+      // Fetch delivery info after status update
+      if (['PREPARING', 'READY', 'PICKED_UP', 'DELIVERING', 'DELIVERED'].includes(selectedStatus)) {
+        setTimeout(() => fetchDeliveryInfo(), 1000);
+      }
+      
       onOrderUpdated();
       onClose();
     } catch (error) {
@@ -237,6 +273,65 @@ export function OrderDetailModal({ order, isOpen, onClose, onOrderUpdated }) {
             </div>
           </div>
 
+          {/* Delivery & Drone Tracking Info */}
+          {['PREPARING', 'READY', 'PICKED_UP', 'DELIVERING', 'DELIVERED'].includes(order.status) && (
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 space-y-4 border border-blue-200">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Plane className="w-5 h-5 text-blue-600" />
+                Thông tin giao hàng
+              </h3>
+              
+              {loadingDelivery ? (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-300 border-t-blue-600"></div>
+                  <p className="text-gray-600 text-sm mt-3">Đang tải thông tin giao hàng...</p>
+                </div>
+              ) : deliveryInfo ? (
+                <>
+                  <DeliveryInfo delivery={deliveryInfo} className="bg-white" />
+                  
+                  {/* Track on Map Button */}
+                  {((deliveryInfo.currentLat && deliveryInfo.currentLng) ||
+                    (deliveryInfo.current_lat && deliveryInfo.current_lng)) && (
+                    <button
+                      onClick={() => setShowMap(true)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
+                    >
+                      <Map className="w-5 h-5" />
+                      Theo dõi drone trên bản đồ
+                    </button>
+                  )}
+                  
+                  {/* Refresh Button */}
+                  <button
+                    onClick={fetchDeliveryInfo}
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
+                  >
+                    <Clock className="w-4 h-4" />
+                    Làm mới thông tin
+                  </button>
+                </>
+              ) : (
+                <div className="bg-white rounded-lg p-6 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-3">
+                    <Plane className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {order.status === 'PREPARING' 
+                      ? 'Drone sẽ được gán sau khi đơn hàng sẵn sàng'
+                      : 'Thông tin giao hàng đang được cập nhật...'}
+                  </p>
+                  <button
+                    onClick={fetchDeliveryInfo}
+                    className="mt-3 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                  >
+                    Kiểm tra lại
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Update Status Section */}
           {canUpdateStatus && (
             <div className="bg-blue-50 rounded-lg p-4 space-y-4">
@@ -291,6 +386,18 @@ export function OrderDetailModal({ order, isOpen, onClose, onOrderUpdated }) {
           </div>
         </div>
       </div>
+
+      {/* Drone Map Modal */}
+      {showMap && deliveryInfo && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl">
+            <DroneMap
+              delivery={deliveryInfo}
+              onClose={() => setShowMap(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

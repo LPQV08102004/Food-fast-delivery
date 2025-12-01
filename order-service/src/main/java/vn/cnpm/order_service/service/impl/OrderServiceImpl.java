@@ -171,6 +171,29 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(status);
         Order updated = orderRepository.save(order);
         
+        // Nếu đơn hàng chuyển sang PREPARING, publish OrderReadyEvent cho delivery-service
+        if (status == OrderStatus.PREPARING) {
+            try {
+                // Lấy thông tin nhà hàng để có địa chỉ
+                vn.cnpm.order_service.DTO.RestaurantDTO restaurant = productClient.getRestaurantById(order.getRestaurantId());
+                
+                vn.cnpm.order_service.event.OrderReadyEvent event = vn.cnpm.order_service.event.OrderReadyEvent.builder()
+                        .orderId(order.getId())
+                        .restaurantId(order.getRestaurantId())
+                        .restaurantAddress(restaurant != null ? restaurant.getAddress() : "Unknown Address")
+                        .deliveryAddress(order.getDeliveryAddress())
+                        .deliveryPhone(order.getDeliveryPhone())
+                        .deliveryFullName(order.getDeliveryFullName())
+                        .build();
+                
+                orderEventPublisher.publishOrderReadyEvent(event);
+                log.info("OrderReadyEvent published for order {}", orderId);
+            } catch (Exception e) {
+                log.error("Failed to publish OrderReadyEvent for order {}", orderId, e);
+                // Không throw exception để không ảnh hưởng đến việc cập nhật status
+            }
+        }
+        
         log.info("Order {} status updated to {}", orderId, status);
         return mapToDto(updated);
     }

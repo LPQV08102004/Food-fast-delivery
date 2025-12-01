@@ -1,9 +1,9 @@
 import axios from 'axios';
 import config from '../config/apiConfig';
 
-// Create axios instance for delivery service
+// Create axios instance for delivery service via API Gateway
 const deliveryApi = axios.create({
-  baseURL: config.getDeliveryServiceUrl(),
+  baseURL: config.getApiGatewayUrl(), // Đổi từ getDeliveryServiceUrl sang getApiGatewayUrl
   headers: {
     'Content-Type': 'application/json',
   },

@@ -113,23 +113,33 @@ const DroneMap = ({ delivery, onClose }) => {
 
   // Parse initial GPS location - support both formats
   useEffect(() => {
+    let initialPosition = null;
+    
     if (delivery?.current_lat && delivery?.current_lng) {
       // Format từ database: current_lat, current_lng (DOUBLE)
-      setDronePosition([delivery.current_lat, delivery.current_lng]);
+      initialPosition = [delivery.current_lat, delivery.current_lng];
     } else if (delivery?.currentLat && delivery?.currentLng) {
       // Format từ Java camelCase: currentLat, currentLng
-      setDronePosition([delivery.currentLat, delivery.currentLng]);
+      initialPosition = [delivery.currentLat, delivery.currentLng];
     } else if (delivery?.currentLocation) {
       // Legacy format: "lat,lng" string
       try {
         const [lat, lng] = delivery.currentLocation.split(',').map(Number);
         if (!isNaN(lat) && !isNaN(lng)) {
-          setDronePosition([lat, lng]);
+          initialPosition = [lat, lng];
         }
       } catch (error) {
         console.error('Error parsing currentLocation:', error);
       }
     }
+    
+    // Fallback to default HCM location if no GPS available
+    if (!initialPosition) {
+      console.warn('No GPS data available, using default location');
+      initialPosition = [10.7769, 106.7009]; // HCM center
+    }
+    
+    setDronePosition(initialPosition);
   }, [delivery]);
 
   // Auto-refresh GPS every 5 seconds
@@ -180,23 +190,25 @@ const DroneMap = ({ delivery, onClose }) => {
     };
   }, [delivery?.id]);
 
-  if (!deliveryData || !dronePosition) {
+  if (!deliveryData) {
     return (
       <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Đang tải bản đồ...</p>
+          <p className="text-gray-600">Không có thông tin giao hàng</p>
         </div>
       </div>
     );
   }
 
-  // Default locations (Hanoi area)
-  const restaurantPosition = [21.0285, 105.8542]; // Hanoi center - should be from restaurant data
-  const customerPosition = [21.0245, 105.8412]; // Should be from delivery address
+  // Always show map, even if GPS not available yet (will show default location)
+  const effectiveDronePosition = dronePosition || [10.7769, 106.7009];
+
+  // Default locations (HCM area)
+  const restaurantPosition = [10.7769, 106.7009]; // HCM center - should be from restaurant data
+  const customerPosition = [10.7245, 106.7412]; // Should be from delivery address
 
   // Calculate route polyline positions
-  const routePositions = [restaurantPosition, dronePosition];
+  const routePositions = [restaurantPosition, effectiveDronePosition];
 
   // Only add customer position if drone hasn't delivered yet
   if (deliveryData.status !== 'COMPLETED') {
@@ -315,7 +327,7 @@ const DroneMap = ({ delivery, onClose }) => {
 
       {/* Map */}
       <MapContainer
-        center={dronePosition}
+        center={effectiveDronePosition}
         zoom={14}
         style={{ height: '600px', width: '100%' }}
         className="rounded-lg"
@@ -326,7 +338,7 @@ const DroneMap = ({ delivery, onClose }) => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
-        <MapUpdater center={dronePosition} />
+        <MapUpdater center={effectiveDronePosition} />
 
         {/* Restaurant marker */}
         <Marker position={restaurantPosition} icon={restaurantIcon}>
@@ -339,7 +351,7 @@ const DroneMap = ({ delivery, onClose }) => {
         </Marker>
 
         {/* Drone marker */}
-        <Marker position={dronePosition} icon={droneIcon}>
+        <Marker position={effectiveDronePosition} icon={droneIcon}>
           <Popup>
             <div className="text-center p-1">
               <p className="font-bold text-blue-700">🚁 {deliveryData.droneId || getField(deliveryData, 'droneId')}</p>
@@ -386,7 +398,7 @@ const DroneMap = ({ delivery, onClose }) => {
         {/* Completed route (from restaurant to drone if picked up) */}
         {['PICKED_UP', 'DELIVERING', 'COMPLETED'].includes(deliveryData.status) && (
           <Polyline
-            positions={[restaurantPosition, dronePosition]}
+            positions={[restaurantPosition, effectiveDronePosition]}
             pathOptions={{
               color: '#10B981',
               weight: 3,

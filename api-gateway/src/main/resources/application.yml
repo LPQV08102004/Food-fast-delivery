@@ -87,6 +87,24 @@ spring:
             - RewritePath=/api/payments/(?<segment>.*), /payments/$\{segment}
             - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
             - DedupeResponseHeader=Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+        # Route cho delivery service
+        - id: delivery-service
+          uri: lb://DELIVERY-SERVICE
+          predicates:
+            - Path=/api/deliveries/**
+          filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+        # Route cho drones management
+        - id: drone-service
+          uri: lb://DELIVERY-SERVICE
+          predicates:
+            - Path=/api/drones/**
+          filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+            - DedupeResponseHeader=Access-Control-Allow-Credentials, RETAIN_UNIQUE
       discovery:
         locator:
           enabled: true

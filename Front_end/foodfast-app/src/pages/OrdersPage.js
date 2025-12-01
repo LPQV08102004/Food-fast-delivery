@@ -138,6 +138,8 @@ export default function OrdersPage() {
   const [deliveryInfo, setDeliveryInfo] = useState(null);
   const [loadingDelivery, setLoadingDelivery] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [deliveryCache, setDeliveryCache] = useState({}); // Cache delivery info by orderId
+  const [pollingInterval, setPollingInterval] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -199,26 +201,76 @@ export default function OrdersPage() {
     
     // Fetch delivery info if order is PREPARING, DELIVERING, or DELIVERED
     if (['PREPARING', 'DELIVERING', 'DELIVERED'].includes(order.status)) {
-      setLoadingDelivery(true);
-      try {
-        const delivery = await deliveryService.getDeliveryByOrderId(order.id);
-        setDeliveryInfo(delivery);
-      } catch (error) {
-        console.error('Error fetching delivery info:', error);
-        // Không hiển thị error nếu chưa có delivery info
-        setDeliveryInfo(null);
-      } finally {
-        setLoadingDelivery(false);
+      // Check cache first
+      if (deliveryCache[order.id]) {
+        setDeliveryInfo(deliveryCache[order.id]);
+        startPollingDelivery(order.id);
+      } else {
+        setLoadingDelivery(true);
+        try {
+          const delivery = await deliveryService.getDeliveryByOrderId(order.id);
+          setDeliveryInfo(delivery);
+          // Update cache
+          setDeliveryCache(prev => ({ ...prev, [order.id]: delivery }));
+          // Start polling for live updates
+          startPollingDelivery(order.id);
+        } catch (error) {
+          console.error('Error fetching delivery info:', error);
+          // Không hiển thị error nếu chưa có delivery info
+          setDeliveryInfo(null);
+        } finally {
+          setLoadingDelivery(false);
+        }
       }
     } else {
       setDeliveryInfo(null);
     }
   };
 
+  // Polling function to update delivery info
+  const startPollingDelivery = (orderId) => {
+    // Clear existing interval
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+    }
+
+    // Poll every 3 seconds for live tracking
+    const interval = setInterval(async () => {
+      try {
+        const delivery = await deliveryService.getDeliveryByOrderId(orderId);
+        setDeliveryInfo(delivery);
+        setDeliveryCache(prev => ({ ...prev, [orderId]: delivery }));
+        
+        // Stop polling if delivery is completed
+        if (delivery.status === 'COMPLETED' || delivery.status === 'CANCELLED') {
+          clearInterval(interval);
+        }
+      } catch (error) {
+        console.error('Error polling delivery info:', error);
+      }
+    }, 3000);
+
+    setPollingInterval(interval);
+  };
+
+  // Cleanup polling on unmount or dialog close
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
+
   const handleCloseDialog = () => {
     setSelectedOrder(null);
     setDeliveryInfo(null);
     setShowMap(false);
+    // Stop polling when dialog closes
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
   };
 
   const handleLogout = () => {
@@ -454,9 +506,8 @@ export default function OrdersPage() {
                           <>
                             <DeliveryInfo delivery={deliveryInfo} />
 
-                            {/* Track on Map Button */}
-                            {((deliveryInfo.currentLat && deliveryInfo.currentLng) ||
-                              (deliveryInfo.current_lat && deliveryInfo.current_lng)) && (
+                            {/* Track on Map Button - Show for PICKING_UP, PICKED_UP, DELIVERING status */}
+                            {['PICKING_UP', 'PICKED_UP', 'DELIVERING'].includes(deliveryInfo.status) && (
                               <button
                                 onClick={() => setShowMap(true)}
                                 className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"

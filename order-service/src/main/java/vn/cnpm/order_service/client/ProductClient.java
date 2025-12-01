@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import vn.cnpm.order_service.DTO.ProductDTO;
+import vn.cnpm.order_service.DTO.RestaurantDTO;
 
 @FeignClient(name = "PRODUCT-SERVICE", fallback = ProductClientFallback.class)
 public interface ProductClient {
@@ -26,4 +27,9 @@ public interface ProductClient {
     @Retry(name = "productService")
     @PutMapping("/api/products/{id}/restore-stock/{quantity}")
     ResponseEntity<Void> restoreStock(@PathVariable("id") Long id, @PathVariable("quantity") int quantity);
+
+    @CircuitBreaker(name = "productService")
+    @Retry(name = "productService")
+    @GetMapping("/api/restaurants/{id}")
+    RestaurantDTO getRestaurantById(@PathVariable("id") Long id);
 }
