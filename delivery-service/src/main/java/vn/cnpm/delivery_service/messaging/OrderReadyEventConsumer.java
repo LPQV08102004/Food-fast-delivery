@@ -11,6 +11,8 @@ import vn.cnpm.delivery_service.model.Delivery;
 import vn.cnpm.delivery_service.model.DeliveryStatus;
 import vn.cnpm.delivery_service.repository.DeliveryRepository;
 import vn.cnpm.delivery_service.service.DroneService;
+import vn.cnpm.delivery_service.service.GpsSimulationService;
+import vn.cnpm.delivery_service.util.GeoPoint;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -22,6 +24,7 @@ public class OrderReadyEventConsumer {
     private final DeliveryRepository deliveryRepository;
     private final DroneService droneService;
     private final DeliveryEventPublisher eventPublisher;
+    private final GpsSimulationService gpsSimulationService;
 
     @RabbitListener(queues = RabbitMQConfig.ORDER_READY_QUEUE)
     public void handleOrderReadyEvent(OrderReadyEvent event) {
@@ -37,13 +40,20 @@ public class OrderReadyEventConsumer {
             }
 
             // Tạo delivery record
+            GeoPoint restaurantGPS = gpsSimulationService.parseAddressToGPS(event.getRestaurantAddress());
+            GeoPoint customerGPS = gpsSimulationService.parseAddressToGPS(event.getDeliveryAddress());
+
             Delivery delivery = Delivery.builder()
                     .orderId(event.getOrderId())
                     .restaurantId(event.getRestaurantId())
                     .restaurantAddress(event.getRestaurantAddress())
+                    .restaurantLat(restaurantGPS.getLat())
+                    .restaurantLng(restaurantGPS.getLng())
                     .deliveryAddress(event.getDeliveryAddress())
                     .deliveryPhone(event.getDeliveryPhone())
                     .deliveryFullName(event.getDeliveryFullName())
+                    .deliveryLat(customerGPS.getLat())
+                    .deliveryLng(customerGPS.getLng())
                     .status(DeliveryStatus.PENDING)
                     .build();
 

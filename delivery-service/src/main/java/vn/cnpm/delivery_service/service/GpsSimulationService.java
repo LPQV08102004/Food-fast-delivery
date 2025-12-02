@@ -79,6 +79,16 @@ public class GpsSimulationService {
         GeoPoint restaurantLocation = parseAddressToGPS(delivery.getRestaurantAddress());
         GeoPoint customerLocation = parseAddressToGPS(delivery.getDeliveryAddress());
 
+        // Lưu GPS của nhà hàng và khách hàng vào delivery nếu chưa có
+        if (delivery.getRestaurantLat() == null || delivery.getRestaurantLng() == null) {
+            delivery.setRestaurantLat(restaurantLocation.getLat());
+            delivery.setRestaurantLng(restaurantLocation.getLng());
+        }
+        if (delivery.getDeliveryLat() == null || delivery.getDeliveryLng() == null) {
+            delivery.setDeliveryLat(customerLocation.getLat());
+            delivery.setDeliveryLng(customerLocation.getLng());
+        }
+
         // Lấy vị trí hiện tại của drone
         GeoPoint currentLocation = new GeoPoint(
                 drone.getCurrentLat() != null ? drone.getCurrentLat() : restaurantLocation.getLat(),
@@ -168,7 +178,7 @@ public class GpsSimulationService {
      * Parse địa chỉ thành GPS (giả lập)
      * Production: Dùng Google Geocoding API hoặc OpenStreetMap Nominatim
      */
-    private GeoPoint parseAddressToGPS(String address) {
+    public GeoPoint parseAddressToGPS(String address) {
         // Giả lập: Random GPS trong khu vực HCM
         // Quận 1: 10.7769, 106.7009
         // Thêm random offset trong phạm vi ±0.05 degrees (~5km)

@@ -24,11 +24,15 @@ public class Delivery {
     // Restaurant info
     private Long restaurantId;
     private String restaurantAddress;
+    private Double restaurantLat;
+    private Double restaurantLng;
     
     // Customer delivery info
     private String deliveryAddress;
     private String deliveryPhone;
     private String deliveryFullName;
+    private Double deliveryLat;
+    private Double deliveryLng;
     
     // Timestamps
     private Instant createdAt;       // Khi nhận yêu cầu

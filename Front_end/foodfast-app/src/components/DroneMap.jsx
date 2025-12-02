@@ -203,9 +203,14 @@ const DroneMap = ({ delivery, onClose }) => {
   // Always show map, even if GPS not available yet (will show default location)
   const effectiveDronePosition = dronePosition || [10.7769, 106.7009];
 
-  // Default locations (HCM area)
-  const restaurantPosition = [10.7769, 106.7009]; // HCM center - should be from restaurant data
-  const customerPosition = [10.7245, 106.7412]; // Should be from delivery address
+  // Get restaurant and customer GPS from delivery data
+  const restaurantPosition = deliveryData.restaurantLat && deliveryData.restaurantLng
+    ? [deliveryData.restaurantLat, deliveryData.restaurantLng]
+    : [10.7769, 106.7009]; // Fallback HCM center
+
+  const customerPosition = deliveryData.deliveryLat && deliveryData.deliveryLng
+    ? [deliveryData.deliveryLat, deliveryData.deliveryLng]
+    : [10.7245, 106.7412]; // Fallback HCM area
 
   // Calculate route polyline positions
   const routePositions = [restaurantPosition, effectiveDronePosition];
