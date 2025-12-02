@@ -19,10 +19,16 @@ public class RabbitMQConfig {
     // Queue names
     public static final String ORDER_READY_QUEUE = "order.ready.queue";
     public static final String ORDER_PICKED_UP_QUEUE = "order.pickedup.queue";
+    public static final String ORDER_DELIVERING_QUEUE = "order.delivering.queue";
+    public static final String ORDER_COMPLETED_QUEUE = "order.completed.queue";
+    public static final String DRONE_LOCATION_UPDATE_QUEUE = "drone.location.update.queue";
 
     // Routing keys
     public static final String ORDER_READY_ROUTING_KEY = "order.ready";
     public static final String ORDER_PICKED_UP_ROUTING_KEY = "order.pickedup";
+    public static final String ORDER_DELIVERING_ROUTING_KEY = "order.delivering";
+    public static final String ORDER_COMPLETED_ROUTING_KEY = "order.completed";
+    public static final String DRONE_LOCATION_UPDATE_ROUTING_KEY = "drone.location.update";
 
     @Bean
     public MessageConverter jsonMessageConverter() {
@@ -66,6 +72,24 @@ public class RabbitMQConfig {
         return new Queue(ORDER_PICKED_UP_QUEUE, true);
     }
 
+    // Order Delivering Queue (thông báo bắt đầu giao hàng)
+    @Bean
+    public Queue orderDeliveringQueue() {
+        return new Queue(ORDER_DELIVERING_QUEUE, true);
+    }
+
+    // Order Completed Queue (thông báo hoàn thành)
+    @Bean
+    public Queue orderCompletedQueue() {
+        return new Queue(ORDER_COMPLETED_QUEUE, true);
+    }
+
+    // Drone Location Update Queue (cập nhật GPS real-time)
+    @Bean
+    public Queue droneLocationUpdateQueue() {
+        return new Queue(DRONE_LOCATION_UPDATE_QUEUE, true);
+    }
+
     // Binding: Order Ready Queue -> Restaurant Exchange
     @Bean
     public Binding orderReadyBinding() {
@@ -82,5 +106,32 @@ public class RabbitMQConfig {
                 .bind(orderPickedUpQueue())
                 .to(deliveryExchange())
                 .with(ORDER_PICKED_UP_ROUTING_KEY);
+    }
+
+    // Binding: Order Delivering Queue -> Delivery Exchange
+    @Bean
+    public Binding orderDeliveringBinding() {
+        return BindingBuilder
+                .bind(orderDeliveringQueue())
+                .to(deliveryExchange())
+                .with(ORDER_DELIVERING_ROUTING_KEY);
+    }
+
+    // Binding: Order Completed Queue -> Delivery Exchange
+    @Bean
+    public Binding orderCompletedBinding() {
+        return BindingBuilder
+                .bind(orderCompletedQueue())
+                .to(deliveryExchange())
+                .with(ORDER_COMPLETED_ROUTING_KEY);
+    }
+
+    // Binding: Drone Location Update Queue -> Delivery Exchange
+    @Bean
+    public Binding droneLocationUpdateBinding() {
+        return BindingBuilder
+                .bind(droneLocationUpdateQueue())
+                .to(deliveryExchange())
+                .with(DRONE_LOCATION_UPDATE_ROUTING_KEY);
     }
 }

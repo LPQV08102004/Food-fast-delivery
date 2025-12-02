@@ -5,6 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.cnpm.delivery_service.event.DroneLocationUpdateEvent;
+import vn.cnpm.delivery_service.event.OrderCompletedEvent;
+import vn.cnpm.delivery_service.event.OrderDeliveringEvent;
+import vn.cnpm.delivery_service.messaging.DeliveryEventPublisher;
 import vn.cnpm.delivery_service.model.Delivery;
 import vn.cnpm.delivery_service.model.DeliveryStatus;
 import vn.cnpm.delivery_service.model.Drone;
@@ -29,6 +33,7 @@ public class GpsSimulationService {
 
     private final DeliveryRepository deliveryRepository;
     private final DroneRepository droneRepository;
+    private final DeliveryEventPublisher eventPublisher;
     private final Random random = new Random();
 
     // Tốc độ drone trung bình (km/h)
@@ -97,6 +102,8 @@ public class GpsSimulationService {
 
         GeoPoint nextLocation;
         double distanceRemaining;
+        boolean statusChanged = false;
+        DeliveryStatus oldStatus = delivery.getStatus();
 
         // Xác định đích đến dựa vào status
         if (delivery.getStatus() == DeliveryStatus.PICKING_UP) {
@@ -115,6 +122,10 @@ public class GpsSimulationService {
                 delivery.setStatus(DeliveryStatus.DELIVERING);
                 delivery.setDeliveringAt(Instant.now());
                 nextLocation = restaurantLocation; // Đứng yên tại nhà hàng
+                statusChanged = true;
+                
+                // Gửi thông báo bắt đầu giao hàng
+                publishDeliveringEvent(delivery, nextLocation);
             }
 
         } else {
@@ -136,6 +147,11 @@ public class GpsSimulationService {
 
                 log.info("Drone {} completed delivery for order {}",
                         drone.getDroneCode(), delivery.getOrderId());
+                        
+                statusChanged = true;
+                
+                // Gửi thông báo hoàn thành
+                publishCompletedEvent(delivery, customerLocation);
             }
         }
 
@@ -147,17 +163,87 @@ public class GpsSimulationService {
         delivery.setCurrentSpeed(AVERAGE_DRONE_SPEED);
 
         // Tính ETA
+        long estimatedArrivalSeconds = 0;
         if (distanceRemaining > 0) {
             double hoursRemaining = distanceRemaining / AVERAGE_DRONE_SPEED;
-            long secondsRemaining = (long) (hoursRemaining * 3600);
-            delivery.setEstimatedArrival(Instant.now().plusSeconds(secondsRemaining));
+            estimatedArrivalSeconds = (long) (hoursRemaining * 3600);
+            delivery.setEstimatedArrival(Instant.now().plusSeconds(estimatedArrivalSeconds));
         }
 
         droneRepository.save(drone);
         deliveryRepository.save(delivery);
 
+        // Gửi GPS update real-time (nếu không phải lúc chuyển status)
+        if (!statusChanged && delivery.getStatus() != DeliveryStatus.COMPLETED) {
+            publishLocationUpdate(delivery, nextLocation, distanceRemaining, estimatedArrivalSeconds);
+        }
+
         log.debug("Drone {} at {} - Distance remaining: {:.2f} km",
                 drone.getDroneCode(), nextLocation, distanceRemaining);
+    }
+
+    /**
+     * Gửi thông báo bắt đầu giao hàng
+     */
+    private void publishDeliveringEvent(Delivery delivery, GeoPoint currentLocation) {
+        try {
+            double hoursRemaining = delivery.getDistanceRemaining() / AVERAGE_DRONE_SPEED;
+            double estimatedMinutes = hoursRemaining * 60;
+            
+            OrderDeliveringEvent event = OrderDeliveringEvent.builder()
+                    .orderId(delivery.getOrderId())
+                    .droneId(delivery.getDroneId())
+                    .currentLat(currentLocation.getLat())
+                    .currentLng(currentLocation.getLng())
+                    .estimatedMinutes(estimatedMinutes)
+                    .build();
+                    
+            eventPublisher.publishOrderDeliveringEvent(event);
+        } catch (Exception e) {
+            log.error("Failed to publish delivering event for order {}", delivery.getOrderId(), e);
+        }
+    }
+
+    /**
+     * Gửi thông báo hoàn thành giao hàng
+     */
+    private void publishCompletedEvent(Delivery delivery, GeoPoint deliveryLocation) {
+        try {
+            OrderCompletedEvent event = OrderCompletedEvent.builder()
+                    .orderId(delivery.getOrderId())
+                    .droneId(delivery.getDroneId())
+                    .completedAt(delivery.getCompletedAt())
+                    .deliveryLat(deliveryLocation.getLat())
+                    .deliveryLng(deliveryLocation.getLng())
+                    .build();
+                    
+            eventPublisher.publishOrderCompletedEvent(event);
+        } catch (Exception e) {
+            log.error("Failed to publish completed event for order {}", delivery.getOrderId(), e);
+        }
+    }
+
+    /**
+     * Gửi cập nhật vị trí GPS real-time
+     */
+    private void publishLocationUpdate(Delivery delivery, GeoPoint location, 
+                                      double distanceRemaining, long etaSeconds) {
+        try {
+            DroneLocationUpdateEvent event = DroneLocationUpdateEvent.builder()
+                    .orderId(delivery.getOrderId())
+                    .droneId(delivery.getDroneId())
+                    .status(delivery.getStatus().name())
+                    .currentLat(location.getLat())
+                    .currentLng(location.getLng())
+                    .distanceRemaining(distanceRemaining)
+                    .currentSpeed(AVERAGE_DRONE_SPEED)
+                    .estimatedArrivalSeconds(etaSeconds)
+                    .build();
+                    
+            eventPublisher.publishDroneLocationUpdate(event);
+        } catch (Exception e) {
+            log.error("Failed to publish location update for order {}", delivery.getOrderId(), e);
+        }
     }
 
     /**

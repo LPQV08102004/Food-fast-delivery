@@ -2,6 +2,9 @@ C:\Study\CNPM\Food-fast-delivery\delivery-service\src\main\java\vn\cnpm\delivery
 C:\Study\CNPM\Food-fast-delivery\delivery-service\src\main\java\vn\cnpm\delivery_service\controller\DeliveryController.java
 C:\Study\CNPM\Food-fast-delivery\delivery-service\src\main\java\vn\cnpm\delivery_service\controller\DroneController.java
 C:\Study\CNPM\Food-fast-delivery\delivery-service\src\main\java\vn\cnpm\delivery_service\DeliveryServiceApplication.java
+C:\Study\CNPM\Food-fast-delivery\delivery-service\src\main\java\vn\cnpm\delivery_service\event\DroneLocationUpdateEvent.java
+C:\Study\CNPM\Food-fast-delivery\delivery-service\src\main\java\vn\cnpm\delivery_service\event\OrderCompletedEvent.java
+C:\Study\CNPM\Food-fast-delivery\delivery-service\src\main\java\vn\cnpm\delivery_service\event\OrderDeliveringEvent.java
 C:\Study\CNPM\Food-fast-delivery\delivery-service\src\main\java\vn\cnpm\delivery_service\event\OrderPickedUpEvent.java
 C:\Study\CNPM\Food-fast-delivery\delivery-service\src\main\java\vn\cnpm\delivery_service\event\OrderReadyEvent.java
 C:\Study\CNPM\Food-fast-delivery\delivery-service\src\main\java\vn\cnpm\delivery_service\messaging\DeliveryEventPublisher.java
