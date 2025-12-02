@@ -162,6 +162,16 @@ public class GpsSimulationService {
         delivery.setDistanceRemaining(distanceRemaining);
         delivery.setCurrentSpeed(AVERAGE_DRONE_SPEED);
 
+        double totalDistance=restaurantLocation.distanceTo(customerLocation);
+        double distanceCovered=((totalDistance - distanceRemaining)/ totalDistance) * 100;
+
+        if (distanceCovered >= 50 && distanceCovered < 55 && 
+            delivery.getStatus() == DeliveryStatus.DELIVERING) {
+    
+    // Gửi thông báo nửa đường
+        publishHalfwayNotification(delivery, nextLocation, distanceRemaining);
+        }
+
         // Tính ETA
         long estimatedArrivalSeconds = 0;
         if (distanceRemaining > 0) {
@@ -299,5 +309,35 @@ public class GpsSimulationService {
         GeoPoint pointB = parseAddressToGPS(addressB);
         return pointA.distanceTo(pointB);
     }
+    private void publishHalfwayNotification(Delivery delivery, GeoPoint currentLocation, 
+                                        double distanceRemaining) {
+    try {
+        // Option 1: Tạo event mới (DroneHalfwayEvent)
+        // Option 2: Dùng lại DroneLocationUpdateEvent với flag đặc biệt
+        
+        // Tính ETA: thời gian = khoảng cách / tốc độ
+        long eta = (long) ((distanceRemaining / AVERAGE_DRONE_SPEED) * 3600); // chuyển từ giờ sang giây
+        
+        DroneLocationUpdateEvent event = DroneLocationUpdateEvent.builder()
+                .orderId(delivery.getOrderId())
+                .droneId(delivery.getDroneId())
+                .status("HALFWAY") // Đánh dấu là nửa đường
+                .currentLat(currentLocation.getLat())
+                .currentLng(currentLocation.getLng())
+                .distanceRemaining(distanceRemaining)
+                .currentSpeed(AVERAGE_DRONE_SPEED)
+                .estimatedArrivalSeconds(eta)
+                .build();
+                
+        eventPublisher.publishDroneLocationUpdate(event);
+        
+        log.info(" Drone {} has reached halfway point for order {}", 
+                 delivery.getDroneId(), delivery.getOrderId());
+                 
+    } catch (Exception e) {
+        log.error("Failed to publish halfway notification", e);
+    }
+}
+
 }
 
