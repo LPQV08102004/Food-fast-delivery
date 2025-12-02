@@ -50,6 +50,12 @@
 			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>
 
+		<!-- WebSocket for Real-time Communication -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
 		<!-- MySQL Driver - Thêm version cụ thể -->
 		<dependency>
 			<groupId>com.mysql</groupId>

@@ -5,6 +5,7 @@ C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_servi
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\client\UserClient.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\client\UserClientFallback.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\config\RabbitMQConfig.java
+C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\config\WebSocketConfig.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\controller\OrderController.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\DTO\OrderRequest.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\DTO\OrderResponse.java
@@ -12,7 +13,10 @@ C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_servi
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\DTO\ProductDTO.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\DTO\ProductResponse.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\DTO\RestaurantDTO.java
+C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\event\DroneLocationUpdateEvent.java
+C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\event\OrderCompletedEvent.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\event\OrderCreatedEvent.java
+C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\event\OrderDeliveringEvent.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\event\OrderPaidEvent.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\event\OrderPickedUpEvent.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\event\OrderReadyEvent.java
@@ -29,3 +33,4 @@ C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_servi
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\repository\OrderRepository.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\service\impl\OrderServiceImpl.java
 C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\service\OrderService.java
+C:\Study\CNPM\Food-fast-delivery\order-service\src\main\java\vn\cnpm\order_service\service\WebSocketService.java

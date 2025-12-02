@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useWebSocket } from '../hooks/useWebSocket';
 import {
   Package,
   Clock,
@@ -44,6 +45,7 @@ import { toast, Toaster } from 'sonner';
 import authService from '../services/authService';
 import orderService from '../services/orderService';
 import deliveryService from '../services/deliveryService';
+import apiConfig from '../config/apiConfig';
 import DeliveryInfo from '../components/DeliveryInfo';
 import DroneMap from '../components/DroneMap';
 
@@ -140,6 +142,40 @@ export default function OrdersPage() {
   const [showMap, setShowMap] = useState(false);
   const [deliveryCache, setDeliveryCache] = useState({}); // Cache delivery info by orderId
   const [pollingInterval, setPollingInterval] = useState(null);
+  const [halfwayNotified, setHalfwayNotified] = useState({}); // Track halfway notifications
+
+  // WebSocket callbacks
+  const handleDeliveryUpdate = useCallback((data) => {
+    console.log('WebSocket delivery update:', data);
+    if (selectedOrder && data.orderId === selectedOrder.id) {
+      // Update delivery info from WebSocket
+      setDeliveryInfo(prev => ({ ...prev, ...data }));
+    }
+  }, [selectedOrder]);
+
+  const handleLocationUpdate = useCallback((data) => {
+    console.log('WebSocket location update:', data);
+    if (selectedOrder && data.orderId === selectedOrder.id) {
+      // Update drone location in real-time
+      setDeliveryInfo(prev => ({
+        ...prev,
+        currentLat: data.currentLat,
+        currentLng: data.currentLng,
+        distanceRemaining: data.distanceRemaining,
+        currentSpeed: data.currentSpeed,
+        estimatedArrivalSeconds: data.estimatedArrivalSeconds
+      }));
+    }
+  }, [selectedOrder]);
+
+  // WebSocket connection
+  const { connected: wsConnected } = useWebSocket(
+    apiConfig.WEBSOCKET_URL,
+    user?.id,
+    selectedOrder?.id,
+    handleDeliveryUpdate,
+    handleLocationUpdate
+  );
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -227,6 +263,43 @@ export default function OrdersPage() {
     }
   };
 
+  // Kiểm tra và hiển thị notification khi drone đi được nửa đường
+  const checkHalfwayProgress = (delivery, orderId) => {
+    // Chỉ check khi đang giao hàng
+    if (delivery.status !== 'DELIVERING') return;
+    
+    // Tránh spam notification (chỉ hiển thị 1 lần)
+    if (halfwayNotified[orderId]) return;
+    
+    // Lấy thông tin khoảng cách
+    const remaining = delivery.distanceRemaining || delivery.distance_remaining || 0;
+    
+    // Giả sử tổng quãng đường ban đầu khoảng 10km (hoặc lấy từ backend nếu có)
+    // Tính % đã đi dựa vào khoảng cách còn lại
+    // Nếu còn 4-6km nghĩa là đã đi được khoảng nửa đường (50%)
+    
+    // Option 1: Dựa vào distanceRemaining
+    if (remaining > 0 && remaining >= 4 && remaining <= 6) {
+      toast.success('🚁 Drone sắp đến rồi!', {
+        description: `Còn khoảng ${Math.ceil(remaining)} km nữa là tới bạn`,
+        duration: 5000,
+        action: {
+          label: 'Xem bản đồ',
+          onClick: () => setShowMap(true)
+        }
+      });
+      
+      // Đánh dấu đã thông báo
+      setHalfwayNotified(prev => ({ ...prev, [orderId]: true }));
+    }
+    
+    // Option 2: Nếu backend gửi flag halfway trong status
+    // if (delivery.status === 'HALFWAY' || delivery.progressStatus === 'HALFWAY') {
+    //   toast.success('🚁 Drone sắp đến rồi!');
+    //   setHalfwayNotified(prev => ({ ...prev, [orderId]: true }));
+    // }
+  };
+
   // Polling function to update delivery info
   const startPollingDelivery = (orderId) => {
     // Clear existing interval
@@ -240,6 +313,9 @@ export default function OrdersPage() {
         const delivery = await deliveryService.getDeliveryByOrderId(orderId);
         setDeliveryInfo(delivery);
         setDeliveryCache(prev => ({ ...prev, [orderId]: delivery }));
+        
+        // Check và hiển thị notification nửa đường
+        checkHalfwayProgress(delivery, orderId);
         
         // Stop polling if delivery is completed
         if (delivery.status === 'COMPLETED' || delivery.status === 'CANCELLED') {
@@ -266,6 +342,16 @@ export default function OrdersPage() {
     setSelectedOrder(null);
     setDeliveryInfo(null);
     setShowMap(false);
+    
+    // Reset halfway notification flag
+    if (selectedOrder) {
+      setHalfwayNotified(prev => {
+        const newState = { ...prev };
+        delete newState[selectedOrder.id];
+        return newState;
+      });
+    }
+    
     // Stop polling when dialog closes
     if (pollingInterval) {
       clearInterval(pollingInterval);

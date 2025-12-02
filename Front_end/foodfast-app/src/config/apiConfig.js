@@ -8,6 +8,7 @@ const hostname = window.location.hostname;
 let API_GATEWAY_URL;
 let PAYMENT_SERVICE_URL;
 let DELIVERY_SERVICE_URL;
+let WEBSOCKET_URL;
 
 if (process.env.REACT_APP_API_GATEWAY_URL) {
   // Use environment variable if provided
@@ -38,10 +39,21 @@ if (process.env.REACT_APP_DELIVERY_SERVICE_URL) {
   DELIVERY_SERVICE_URL = `http://${hostname}:8086/api`;
 }
 
+// WebSocket URL for Order Service
+if (process.env.REACT_APP_WEBSOCKET_URL) {
+  WEBSOCKET_URL = process.env.REACT_APP_WEBSOCKET_URL;
+} else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+  WEBSOCKET_URL = 'http://localhost:8081/ws';
+} else {
+  // LAN or production - use same hostname
+  WEBSOCKET_URL = `http://${hostname}:8081/ws`;
+}
+
 const config = {
   API_GATEWAY_URL,
   PAYMENT_SERVICE_URL,
   DELIVERY_SERVICE_URL,
+  WEBSOCKET_URL,
   
   // Helper function to get payment service URL
   getPaymentServiceUrl: (path = '') => {

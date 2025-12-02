@@ -10,7 +10,8 @@ import vn.cnpm.delivery_service.model.Drone;
 import vn.cnpm.delivery_service.model.DroneStatus;
 import vn.cnpm.delivery_service.repository.DeliveryRepository;
 import vn.cnpm.delivery_service.repository.DroneRepository;
-
+import org.springframework.scheduling.annotation.Async;
+import java.util.concurrent.TimeUnit;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -75,6 +76,34 @@ public class DroneService {
 
         return deliveryRepository.save(delivery);
     }
+    @Async
+@Transactional
+public void autoCompleteAfterDelay(Long deliveryId, int delayMinutes) {
+    try {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new RuntimeException("Delivery not found"));
+
+        // Chờ 'delayMinutes' phút
+        TimeUnit.MINUTES.sleep(delayMinutes);
+
+        // Kiểm tra xem delivery vẫn đang ở trạng thái DELIVERING
+        delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new RuntimeException("Delivery not found"));
+
+        if (delivery.getStatus() == DeliveryStatus.DELIVERING) {
+            delivery.setStatus(DeliveryStatus.COMPLETED);
+            delivery.setCompletedAt(Instant.now());
+            deliveryRepository.save(delivery);
+
+            log.info("Auto-completed delivery {} after {} minutes",
+                    deliveryId, delayMinutes);
+        }
+
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.error("Auto-complete interrupted for delivery {}", deliveryId);
+    }
+}
 
     /**
      * Bắt đầu giao hàng
@@ -90,6 +119,11 @@ public class DroneService {
 
         delivery.setStatus(DeliveryStatus.DELIVERING);
         delivery.setDeliveringAt(Instant.now());
+        
+        
+        // Tự động hoàn thành sau 1 phút (giả lập)
+        autoCompleteAfterDelay(deliveryId, 1);
+
         
         // Giả lập vị trí GPS của drone
         delivery.setCurrentLat(10.7769 + random.nextDouble() * 0.1);  // HCM area
